@@ -8,6 +8,11 @@ import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
 import Graphics.GLUtil
 import System.FilePath
+import Graphics.GLMatrix as GLM
+import Graphics.Rendering.OpenGL.GL.Shaders.ProgramObjects
+import Linear.Matrix
+import Linear.V3
+import Linear.Quaternion
 
 vertices :: [GLfloat]
 vertices = [
@@ -37,24 +42,13 @@ main = do
             setKeyCallback w $ Just keyCallback
             (width,height) <- getFramebufferSize w
             GL.viewport $= (Position 0 0, Size (fromIntegral width) (fromIntegral height))
-            shader <- simpleShaderProgram ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "textures.vs")
-                ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "textures.frag")
+            shader <- simpleShaderProgram ("data" </> "1_Getting-started" </> "5_Transformations" </> "transformations.vs")
+                ("data" </> "1_Getting-started" </> "5_Transformations" </> "transformations.frag")
             (vao, vbo, ebo) <- createVAO
 
             -- load and create texture
-            Right t0 <- readTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "container.jpg")
-            textureWrapMode Texture2D S $= (Repeated, Repeat)
-            textureWrapMode Texture2D T $= (Repeated, Repeat)
-            textureFilter Texture2D $= ((Linear', Nothing), Linear')
-            generateMipmap Texture2D $= Enabled
-            textureBinding Texture2D $= Nothing
-
-            Right t1 <- readTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "awesomeface.png")
-            textureWrapMode Texture2D S $= (Repeated, Repeat)
-            textureWrapMode Texture2D T $= (Repeated, Repeat)
-            textureFilter Texture2D $= ((Linear', Nothing), Linear')
-            generateMipmap Texture2D $= Enabled
-            textureBinding Texture2D $= Nothing
+            t0 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "container.jpg")
+            t1 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "awesomeface3.png")
 
             --polygonMode $= (Line, Line)
             whileM_ (not <$> windowShouldClose w) $ do
@@ -73,6 +67,12 @@ main = do
                 textureBinding Texture2D $= Just t1
                 setUniform shader "ourTexture2" (TextureUnit 1)
 
+                Just t <- getTime
+                let angle = 0.87266462599 * t
+                    rot = axisAngle (V3 (0.0 :: GLfloat) 0.0 1.0) (realToFrac angle)
+                    mat = mkTransformation rot (V3 0.5 (-0.5) (0.0 :: GLfloat))
+                setUniform shader "transform" mat
+
                 bindVertexArrayObject $= Just vao
                 drawElements Triangles 6 UnsignedInt nullPtr
                 bindVertexArrayObject $= Nothing
@@ -82,6 +82,20 @@ main = do
             deleteObjectName vbo
             deleteObjectName ebo
     terminate
+
+createTexture :: FilePath -> IO TextureObject
+createTexture p = do
+    result <- readTexture p
+    case result of
+        Left s -> error s
+        Right t -> do
+            textureWrapMode Texture2D S $= (Repeated, Repeat)
+            textureWrapMode Texture2D T $= (Repeated, Repeat)
+            textureFilter Texture2D $= ((Linear', Nothing), Linear')
+            generateMipmap Texture2D $= Enabled
+            textureBinding Texture2D $= Nothing
+            return t
+
 
 createVAO :: IO (VertexArrayObject, BufferObject, BufferObject)
 createVAO = do

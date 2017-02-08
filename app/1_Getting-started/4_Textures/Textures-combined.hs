@@ -49,7 +49,7 @@ main = do
             generateMipmap Texture2D $= Enabled
             textureBinding Texture2D $= Nothing
 
-            Right t1 <- readTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "awesomeface.png")
+            Right t1 <- readTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "awesomeface3.png")
             textureWrapMode Texture2D S $= (Repeated, Repeat)
             textureWrapMode Texture2D T $= (Repeated, Repeat)
             textureFilter Texture2D $= ((Linear', Nothing), Linear')

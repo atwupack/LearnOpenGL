@@ -7,7 +7,9 @@ import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
 import Graphics.GLUtil
+import Graphics.GLUtil.JuicyTextures
 import System.FilePath
+
 
 vertices :: [GLfloat]
 vertices = [
@@ -42,7 +44,7 @@ main = do
             (vao, vbo, ebo) <- createVAO
 
             -- load and create texture
-            Right to <- readTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "container.jpg")
+            Right to <- readTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "container.jpg")
             textureWrapMode Texture2D S $= (Repeated, Repeat)
             textureWrapMode Texture2D T $= (Repeated, Repeat)
             textureFilter Texture2D $= ((Linear', Nothing), Linear')
