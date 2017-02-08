@@ -23,7 +23,8 @@ cache:
 addons:
   apt:
     packages:
-      - libgmp-dev
+      - libxxf86vm-dev
+      - libglfw-dev
 
 before_install:
 # Download and unpack the stack executable
