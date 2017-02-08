@@ -23,6 +23,7 @@ cache:
 addons:
   apt:
     packages:
+      - libgmp-dev
       - libxxf86vm-dev
       - libglfw-dev
 
