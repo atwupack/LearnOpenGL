@@ -1,7 +1,5 @@
 module Main where
 
-import Data.Array.MArray
-import Data.Array.Storable
 import Control.Monad.Loops
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW

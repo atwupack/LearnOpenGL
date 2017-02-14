@@ -11,6 +11,7 @@ import Graphics.Rendering.OpenGL.GL.Shaders.ProgramObjects
 import Linear.Matrix
 import Linear.V3
 import Linear.Quaternion
+import Linear.Projection
 
 vertices :: [GLfloat]
 vertices = [
@@ -40,8 +41,8 @@ main = do
             setKeyCallback w $ Just keyCallback
             (width,height) <- getFramebufferSize w
             GL.viewport $= (Position 0 0, Size (fromIntegral width) (fromIntegral height))
-            shader <- simpleShaderProgram ("data" </> "1_Getting-started" </> "5_Transformations" </> "transformations.vs")
-                ("data" </> "1_Getting-started" </> "5_Transformations" </> "transformations.frag")
+            shader <- simpleShaderProgram ("data" </> "1_Getting-started" </> "6_Coordinate-systems" </> "coord-systems.vs")
+                ("data" </> "1_Getting-started" </> "6_Coordinate-systems" </> "coord-systems.frag")
             (vao, vbo, ebo) <- createVAO
 
             -- load and create texture
@@ -65,11 +66,14 @@ main = do
                 textureBinding Texture2D $= Just t1
                 setUniform shader "ourTexture2" (TextureUnit 1)
 
-                Just t <- getTime
-                let angle = 0.87266462599 * t
-                    rot = axisAngle (V3 (0.0 :: GLfloat) 0.0 1.0) (realToFrac angle)
-                    mat = mkTransformation rot (V3 0.5 (-0.5) (0.0 :: GLfloat))
-                setUniform shader "transform" mat
+                let angle = pi / 180 * (-55)
+                    rot = axisAngle (V3 (1.0 :: GLfloat) 0.0 0.0) (realToFrac angle)
+                    model = mkTransformation rot (V3 0.0 0.0 (0.0 :: GLfloat))
+                    view = mkTransformationMat identity (V3 0.0 0.0 (-3.0 :: GLfloat))
+                    projection = perspective (pi / 4.0) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
+                setUniform shader "model" model
+                setUniform shader "view" view
+                setUniform shader "projection" projection
 
                 bindVertexArrayObject $= Just vao
                 drawElements Triangles 6 UnsignedInt nullPtr
