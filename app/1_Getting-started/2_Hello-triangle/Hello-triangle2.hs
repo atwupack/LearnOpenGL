@@ -2,7 +2,7 @@ module Main where
 
 import Data.Array.MArray
 import Data.Array.Storable
-import Control.Monad.Loops
+import LOGL.Window
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
@@ -39,35 +39,24 @@ fragmentShaderSource = "#version 330 core\n"
 main :: IO ()
 main = do
     GLFW.init
-    windowHint $ WindowHint'ContextVersionMajor 3
-    windowHint $ WindowHint'ContextVersionMinor 3
-    windowHint $ WindowHint'OpenGLProfile OpenGLProfile'Core
-    windowHint $ WindowHint'Resizable False
-    mw <- createWindow 800 600 "LearnOpenGL" Nothing Nothing
-    case mw of
-        Nothing -> print "Could not create GLFW window"
-        Just w -> do
-            makeContextCurrent mw
-            setKeyCallback w $ Just keyCallback
-            (width,height) <- getFramebufferSize w
-            GL.viewport $= (Position 0 0, Size (fromIntegral width) (fromIntegral height))
-            prg <- createShaderProgram
-            (vao, vbo, ebo) <- createVAO
-            --polygonMode $= (Line, Line)
-            whileM_ (not <$> windowShouldClose w) $ do
-                pollEvents
-                clearColor $= Color4 0.2 0.3 0.3 1.0
-                clear [ColorBuffer]
-                -- Draw our first triangle
-                currentProgram $= Just prg
-                bindVertexArrayObject $= Just vao
-                --drawArrays Triangles 0 3
-                drawElements Triangles 6 UnsignedInt nullPtr
-                bindVertexArrayObject $= Nothing
-                swapBuffers w
-            deleteObjectName vao
-            deleteObjectName vbo
-            deleteObjectName ebo
+    w <- createAppWindow 800 600 "LearnOpenGL"
+    prg <- createShaderProgram
+    (vao, vbo, ebo) <- createVAO
+    --polygonMode $= (Line, Line)
+    runAppLoop w $ do
+        pollEvents
+        clearColor $= Color4 0.2 0.3 0.3 1.0
+        clear [ColorBuffer]
+        -- Draw our first triangle
+        currentProgram $= Just prg
+        bindVertexArrayObject $= Just vao
+        --drawArrays Triangles 0 3
+        drawElements Triangles 6 UnsignedInt nullPtr
+        bindVertexArrayObject $= Nothing
+        swapBuffers w
+    deleteObjectName vao
+    deleteObjectName vbo
+    deleteObjectName ebo
     terminate
 
 createShaderProgram :: IO Program
@@ -123,8 +112,3 @@ createEBO = do
     arr <- newListArray (0, size - 1) indices
     withStorableArray arr $ \ptr -> bufferData ElementArrayBuffer $= (ptrsize, ptr, StaticDraw)
     return ebo
-
-
-keyCallback :: Window -> Key -> Int -> KeyState -> ModifierKeys -> IO ()
-keyCallback w Key'Escape _ KeyState'Pressed _ = setWindowShouldClose w True
-keyCallback _ _ _ _ _ = return ()

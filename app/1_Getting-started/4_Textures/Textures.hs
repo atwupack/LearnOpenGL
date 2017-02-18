@@ -1,6 +1,6 @@
 module Main where
 
-import Control.Monad.Loops
+import LOGL.Window
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
@@ -25,51 +25,40 @@ indices = [  -- Note that we start from 0!
 main :: IO ()
 main = do
     GLFW.init
-    windowHint $ WindowHint'ContextVersionMajor 3
-    windowHint $ WindowHint'ContextVersionMinor 3
-    windowHint $ WindowHint'OpenGLProfile OpenGLProfile'Core
-    windowHint $ WindowHint'Resizable False
-    mw <- createWindow 800 600 "LearnOpenGL" Nothing Nothing
-    case mw of
-        Nothing -> print "Could not create GLFW window"
-        Just w -> do
-            makeContextCurrent mw
-            setKeyCallback w $ Just keyCallback
-            (width,height) <- getFramebufferSize w
-            GL.viewport $= (Position 0 0, Size (fromIntegral width) (fromIntegral height))
-            shader <- simpleShaderProgram ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "textures.vs")
-                ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "textures.frag")
-            (vao, vbo, ebo) <- createVAO
+    w <- createAppWindow 800 600 "LearnOpenGL"
+    shader <- simpleShaderProgram ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "textures.vs")
+        ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "textures.frag")
+    (vao, vbo, ebo) <- createVAO
 
-            -- load and create texture
-            Right to <- readTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "container.jpg")
-            textureWrapMode Texture2D S $= (Repeated, Repeat)
-            textureWrapMode Texture2D T $= (Repeated, Repeat)
-            textureFilter Texture2D $= ((Linear', Nothing), Linear')
-            generateMipmap Texture2D $= Enabled
-            textureBinding Texture2D $= Nothing
+    -- load and create texture
+    Right to <- readTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "container.jpg")
+    textureWrapMode Texture2D S $= (Repeated, Repeat)
+    textureWrapMode Texture2D T $= (Repeated, Repeat)
+    textureFilter Texture2D $= ((Linear', Nothing), Linear')
+    generateMipmap Texture2D $= Enabled
+    textureBinding Texture2D $= Nothing
 
-            --polygonMode $= (Line, Line)
-            whileM_ (not <$> windowShouldClose w) $ do
-                pollEvents
-                clearColor $= Color4 0.2 0.3 0.3 1.0
-                clear [ColorBuffer]
+    --polygonMode $= (Line, Line)
+    runAppLoop w $ do
+        pollEvents
+        clearColor $= Color4 0.2 0.3 0.3 1.0
+        clear [ColorBuffer]
 
-                -- Draw our first triangle
-                currentProgram $= Just (program shader)
+        -- Draw our first triangle
+        currentProgram $= Just (program shader)
 
-                --activeTexture $= TextureUnit 0
-                textureBinding Texture2D $= Just to
-                --setUniform shader "ourTexture" (TextureUnit 0)
+        --activeTexture $= TextureUnit 0
+        textureBinding Texture2D $= Just to
+        --setUniform shader "ourTexture" (TextureUnit 0)
 
-                bindVertexArrayObject $= Just vao
-                drawElements Triangles 6 UnsignedInt nullPtr
-                bindVertexArrayObject $= Nothing
+        bindVertexArrayObject $= Just vao
+        drawElements Triangles 6 UnsignedInt nullPtr
+        bindVertexArrayObject $= Nothing
 
-                swapBuffers w
-            deleteObjectName vao
-            deleteObjectName vbo
-            deleteObjectName ebo
+        swapBuffers w
+    deleteObjectName vao
+    deleteObjectName vbo
+    deleteObjectName ebo
     terminate
 
 createVAO :: IO (VertexArrayObject, BufferObject, BufferObject)
@@ -86,8 +75,3 @@ createVAO = do
     vertexAttribArray (AttribLocation 2) $= Enabled
     bindVertexArrayObject $= Nothing
     return (vao, vbo, ebo)
-
-
-keyCallback :: Window -> Key -> Int -> KeyState -> ModifierKeys -> IO ()
-keyCallback w Key'Escape _ KeyState'Pressed _ = setWindowShouldClose w True
-keyCallback _ _ _ _ _ = return ()

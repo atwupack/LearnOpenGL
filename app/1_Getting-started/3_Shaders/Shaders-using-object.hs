@@ -2,7 +2,7 @@ module Main where
 
 import Data.Array.MArray
 import Data.Array.Storable
-import Control.Monad.Loops
+import LOGL.Window
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
@@ -20,35 +20,23 @@ vertices = [
 main :: IO ()
 main = do
     GLFW.init
-    windowHint $ WindowHint'ContextVersionMajor 3
-    windowHint $ WindowHint'ContextVersionMinor 3
-    windowHint $ WindowHint'OpenGLProfile OpenGLProfile'Core
-    windowHint $ WindowHint'Resizable False
-    mw <- createWindow 800 600 "LearnOpenGL" Nothing Nothing
-    case mw of
-        Nothing -> print "Could not create GLFW window"
-        Just w -> do
-            makeContextCurrent mw
-            setKeyCallback w $ Just keyCallback
-            (width,height) <- getFramebufferSize w
-            GL.viewport $= (Position 0 0, Size (fromIntegral width) (fromIntegral height))
+    w <- createAppWindow 800 600 "LearnOpenGL"
+    shader <- simpleShaderProgram ("data" </> "1_Getting-started" </> "3_Shaders" </> "Shaders-using-object" </> "default.vs")
+        ("data" </> "1_Getting-started" </> "3_Shaders" </> "Shaders-using-object" </> "default.frag")
 
-            shader <- simpleShaderProgram ("data" </> "1_Getting-started" </> "3_Shaders" </> "Shaders-using-object" </> "default.vs")
-                ("data" </> "1_Getting-started" </> "3_Shaders" </> "Shaders-using-object" </> "default.frag")
-
-            (vao, vbo) <- createVAO
-            whileM_ (not <$> windowShouldClose w) $ do
-                pollEvents
-                clearColor $= Color4 0.2 0.3 0.3 1.0
-                clear [ColorBuffer]
-                -- Draw our first triangle
-                currentProgram $= Just (program shader)
-                bindVertexArrayObject $= Just vao
-                drawArrays Triangles 0 3
-                bindVertexArrayObject $= Nothing
-                swapBuffers w
-            deleteObjectName vao
-            deleteObjectName vbo
+    (vao, vbo) <- createVAO
+    runAppLoop w $ do
+        pollEvents
+        clearColor $= Color4 0.2 0.3 0.3 1.0
+        clear [ColorBuffer]
+        -- Draw our first triangle
+        currentProgram $= Just (program shader)
+        bindVertexArrayObject $= Just vao
+        drawArrays Triangles 0 3
+        bindVertexArrayObject $= Nothing
+        swapBuffers w
+    deleteObjectName vao
+    deleteObjectName vbo
     terminate
 
 createVAO :: IO (VertexArrayObject, BufferObject)
@@ -73,7 +61,3 @@ createVBO = do
     arr <- newListArray (0, size - 1) vertices
     withStorableArray arr $ \ptr -> bufferData ArrayBuffer $= (ptrsize, ptr, StaticDraw)
     return vbo
-
-keyCallback :: Window -> Key -> Int -> KeyState -> ModifierKeys -> IO ()
-keyCallback w Key'Escape _ KeyState'Pressed _ = setWindowShouldClose w True
-keyCallback _ _ _ _ _ = return ()

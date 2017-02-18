@@ -1,12 +1,11 @@
 module Main where
 
-import Control.Monad.Loops
+import LOGL.Window
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
 import Graphics.GLUtil
 import System.FilePath
-import Graphics.GLMatrix as GLM
 import Graphics.Rendering.OpenGL.GL.Shaders.ProgramObjects
 import Linear.Matrix
 import Linear.V3
@@ -28,57 +27,46 @@ indices = [  -- Note that we start from 0!
 main :: IO ()
 main = do
     GLFW.init
-    windowHint $ WindowHint'ContextVersionMajor 3
-    windowHint $ WindowHint'ContextVersionMinor 3
-    windowHint $ WindowHint'OpenGLProfile OpenGLProfile'Core
-    windowHint $ WindowHint'Resizable False
-    mw <- createWindow 800 600 "LearnOpenGL" Nothing Nothing
-    case mw of
-        Nothing -> print "Could not create GLFW window"
-        Just w -> do
-            makeContextCurrent mw
-            setKeyCallback w $ Just keyCallback
-            (width,height) <- getFramebufferSize w
-            GL.viewport $= (Position 0 0, Size (fromIntegral width) (fromIntegral height))
-            shader <- simpleShaderProgram ("data" </> "1_Getting-started" </> "5_Transformations" </> "transformations.vs")
-                ("data" </> "1_Getting-started" </> "5_Transformations" </> "transformations.frag")
-            (vao, vbo, ebo) <- createVAO
+    w <- createAppWindow 800 600 "LearnOpenGL"
+    shader <- simpleShaderProgram ("data" </> "1_Getting-started" </> "5_Transformations" </> "transformations.vs")
+        ("data" </> "1_Getting-started" </> "5_Transformations" </> "transformations.frag")
+    (vao, vbo, ebo) <- createVAO
 
-            -- load and create texture
-            t0 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "container.jpg")
-            t1 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "awesomeface3.png")
+    -- load and create texture
+    t0 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "container.jpg")
+    t1 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "awesomeface3.png")
 
-            --polygonMode $= (Line, Line)
-            whileM_ (not <$> windowShouldClose w) $ do
-                pollEvents
-                clearColor $= Color4 0.2 0.3 0.3 1.0
-                clear [ColorBuffer]
+    --polygonMode $= (Line, Line)
+    runAppLoop w $ do
+        pollEvents
+        clearColor $= Color4 0.2 0.3 0.3 1.0
+        clear [ColorBuffer]
 
-                -- Draw our first triangle
-                currentProgram $= Just (program shader)
+        -- Draw our first triangle
+        currentProgram $= Just (program shader)
 
-                activeTexture $= TextureUnit 0
-                textureBinding Texture2D $= Just t0
-                setUniform shader "ourTexture1" (TextureUnit 0)
+        activeTexture $= TextureUnit 0
+        textureBinding Texture2D $= Just t0
+        setUniform shader "ourTexture1" (TextureUnit 0)
 
-                activeTexture $= TextureUnit 1
-                textureBinding Texture2D $= Just t1
-                setUniform shader "ourTexture2" (TextureUnit 1)
+        activeTexture $= TextureUnit 1
+        textureBinding Texture2D $= Just t1
+        setUniform shader "ourTexture2" (TextureUnit 1)
 
-                Just t <- getTime
-                let angle = 0.87266462599 * t
-                    rot = axisAngle (V3 (0.0 :: GLfloat) 0.0 1.0) (realToFrac angle)
-                    mat = mkTransformation rot (V3 0.5 (-0.5) (0.0 :: GLfloat))
-                setUniform shader "transform" mat
+        Just t <- getTime
+        let angle = 0.87266462599 * t
+            rot = axisAngle (V3 (0.0 :: GLfloat) 0.0 1.0) (realToFrac angle)
+            mat = mkTransformation rot (V3 0.5 (-0.5) (0.0 :: GLfloat))
+        setUniform shader "transform" mat
 
-                bindVertexArrayObject $= Just vao
-                drawElements Triangles 6 UnsignedInt nullPtr
-                bindVertexArrayObject $= Nothing
+        bindVertexArrayObject $= Just vao
+        drawElements Triangles 6 UnsignedInt nullPtr
+        bindVertexArrayObject $= Nothing
 
-                swapBuffers w
-            deleteObjectName vao
-            deleteObjectName vbo
-            deleteObjectName ebo
+        swapBuffers w
+    deleteObjectName vao
+    deleteObjectName vbo
+    deleteObjectName ebo
     terminate
 
 createTexture :: FilePath -> IO TextureObject
@@ -109,8 +97,3 @@ createVAO = do
     vertexAttribArray (AttribLocation 2) $= Enabled
     bindVertexArrayObject $= Nothing
     return (vao, vbo, ebo)
-
-
-keyCallback :: Window -> Key -> Int -> KeyState -> ModifierKeys -> IO ()
-keyCallback w Key'Escape _ KeyState'Pressed _ = setWindowShouldClose w True
-keyCallback _ _ _ _ _ = return ()

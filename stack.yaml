@@ -5,4 +5,4 @@ packages:
 extra-deps:
 - GLUtil-0.9.1.1
 - hpp-0.4.0
-resolver: lts-6.29
+resolver: lts-6.30

@@ -15,12 +15,14 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Shader, Graphics.GLMatrix
+  exposed-modules:     LOGL.Window
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , bytestring
                      , filepath
                      , OpenGLRaw
+                     , GLFW-b
+                     , monad-loops
   default-language:    Haskell2010
 
 executable hello-window
@@ -50,7 +52,7 @@ executable hello-triangle
     build-depends:       base
                        , GLFW-b
                        , OpenGL
-                       , monad-loops
+                       , LearnOpenGL
                        , array
     default-language:    Haskell2010
 
@@ -61,7 +63,7 @@ executable hello-triangle2
     build-depends:       base
                        , GLFW-b
                        , OpenGL
-                       , monad-loops
+                       , LearnOpenGL
                        , array
     default-language:    Haskell2010
 
@@ -72,7 +74,7 @@ executable shaders-uniform
     build-depends:       base
                        , GLFW-b
                        , OpenGL
-                       , monad-loops
+                       , LearnOpenGL
                        , array
     default-language:    Haskell2010
 
@@ -83,7 +85,7 @@ executable shaders-interpolated
     build-depends:       base
                        , GLFW-b
                        , OpenGL
-                       , monad-loops
+                       , LearnOpenGL
                        , array
     default-language:    Haskell2010
 
@@ -94,7 +96,7 @@ executable shaders-using-object
     build-depends:       base
                        , GLFW-b
                        , OpenGL
-                       , monad-loops
+                       , LearnOpenGL
                        , array
                        , filepath
                        , GLUtil
@@ -107,7 +109,7 @@ executable textures
     build-depends:       base
                        , GLFW-b
                        , OpenGL
-                       , monad-loops
+                       , LearnOpenGL
                        , filepath
                        , GLUtil
     default-language:    Haskell2010
@@ -119,7 +121,7 @@ executable textures-combined
     build-depends:       base
                        , GLFW-b
                        , OpenGL
-                       , monad-loops
+                       , LearnOpenGL
                        , filepath
                        , GLUtil
     default-language:    Haskell2010
@@ -131,7 +133,6 @@ executable transformations
     build-depends:       base
                        , GLFW-b
                        , OpenGL
-                       , monad-loops
                        , filepath
                        , GLUtil
                        , LearnOpenGL
@@ -145,7 +146,6 @@ executable coordinate-systems
     build-depends:       base
                        , GLFW-b
                        , OpenGL
-                       , monad-loops
                        , filepath
                        , GLUtil
                        , LearnOpenGL

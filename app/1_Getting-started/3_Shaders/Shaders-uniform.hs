@@ -2,7 +2,7 @@ module Main where
 
 import Data.Array.MArray
 import Data.Array.Storable
-import Control.Monad.Loops
+import LOGL.Window
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
@@ -33,40 +33,29 @@ fragmentShaderSource = "#version 330 core\n"
 main :: IO ()
 main = do
     GLFW.init
-    windowHint $ WindowHint'ContextVersionMajor 3
-    windowHint $ WindowHint'ContextVersionMinor 3
-    windowHint $ WindowHint'OpenGLProfile OpenGLProfile'Core
-    windowHint $ WindowHint'Resizable False
-    mw <- createWindow 800 600 "LearnOpenGL" Nothing Nothing
-    case mw of
-        Nothing -> print "Could not create GLFW window"
-        Just w -> do
-            makeContextCurrent mw
-            setKeyCallback w $ Just keyCallback
-            (width,height) <- getFramebufferSize w
-            GL.viewport $= (Position 0 0, Size (fromIntegral width) (fromIntegral height))
-            prg <- createShaderProgram
-            (vao, vbo) <- createVAO 9 vertices
-            whileM_ (not <$> windowShouldClose w) $ do
-                pollEvents
-                clearColor $= Color4 0.2 0.3 0.3 1.0
-                clear [ColorBuffer]
-                -- Draw our first triangle
-                currentProgram $= Just prg
-                -- Update the uniform color
-                time <- getTime
-                case time of
-                    Nothing -> error "No time"
-                    Just timeValue -> do
-                        let greenValue = ((sin timeValue) / 2.0) + 0.5
-                        vertexColorLocation <- get $ uniformLocation prg "ourColor"
-                        uniform vertexColorLocation $= Color4 0.0 (realToFrac greenValue :: GLfloat) 0.0 1.0
-                bindVertexArrayObject $= Just vao
-                drawArrays Triangles 0 3
-                bindVertexArrayObject $= Nothing
-                swapBuffers w
-            deleteObjectName vao
-            deleteObjectName vbo
+    w <- createAppWindow 800 600 "LearnOpenGL"
+    prg <- createShaderProgram
+    (vao, vbo) <- createVAO 9 vertices
+    runAppLoop w $ do
+        pollEvents
+        clearColor $= Color4 0.2 0.3 0.3 1.0
+        clear [ColorBuffer]
+        -- Draw our first triangle
+        currentProgram $= Just prg
+        -- Update the uniform color
+        time <- getTime
+        case time of
+            Nothing -> error "No time"
+            Just timeValue -> do
+                let greenValue = (sin timeValue / 2.0) + 0.5
+                vertexColorLocation <- get $ uniformLocation prg "ourColor"
+                uniform vertexColorLocation $= Color4 0.0 (realToFrac greenValue :: GLfloat) 0.0 1.0
+        bindVertexArrayObject $= Just vao
+        drawArrays Triangles 0 3
+        bindVertexArrayObject $= Nothing
+        swapBuffers w
+    deleteObjectName vao
+    deleteObjectName vbo
     terminate
 
 createShaderProgram :: IO Program
@@ -110,7 +99,3 @@ createVBO size elems = do
     arr <- newListArray (0, size - 1) elems
     withStorableArray arr $ \ptr -> bufferData ArrayBuffer $= (ptrsize, ptr, StaticDraw)
     return vbo
-
-keyCallback :: Window -> Key -> Int -> KeyState -> ModifierKeys -> IO ()
-keyCallback w Key'Escape _ KeyState'Pressed _ = setWindowShouldClose w True
-keyCallback _ _ _ _ _ = return ()
