@@ -182,6 +182,19 @@ executable coordinate-systems-multiple-objects
                        , linear
     default-language:    Haskell2010
 
+executable camera-circle
+    hs-source-dirs:      app/1_Getting-started/7_Camera
+    main-is:             Camera-circle.hs
+    ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+    build-depends:       base
+                       , GLFW-b
+                       , OpenGL
+                       , filepath
+                       , GLUtil
+                       , LearnOpenGL
+                       , linear
+    default-language:    Haskell2010
+
 source-repository head
   type:     git
   location: https://github.com/atwupack/LearnOpenGL
