@@ -1,6 +1,7 @@
 module Main where
 
 import LOGL.Window
+import LOGL.Texture
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
@@ -28,20 +29,9 @@ main = do
         ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "textures.frag")
     (vao, vbo, ebo) <- createVAO
 
-    -- load and create texture
-    Right t0 <- readTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "container.jpg")
-    textureWrapMode Texture2D S $= (Repeated, Repeat)
-    textureWrapMode Texture2D T $= (Repeated, Repeat)
-    textureFilter Texture2D $= ((Linear', Nothing), Linear')
-    generateMipmap Texture2D $= Enabled
-    textureBinding Texture2D $= Nothing
-
-    Right t1 <- readTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "awesomeface3.png")
-    textureWrapMode Texture2D S $= (Repeated, Repeat)
-    textureWrapMode Texture2D T $= (Repeated, Repeat)
-    textureFilter Texture2D $= ((Linear', Nothing), Linear')
-    generateMipmap Texture2D $= Enabled
-    textureBinding Texture2D $= Nothing
+    -- load and create textures
+    t0 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "container.jpg")
+    t1 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "awesomeface3.png")
 
     --polygonMode $= (Line, Line)
     runAppLoop w $ do
