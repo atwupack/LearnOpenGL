@@ -66,6 +66,7 @@ executable hello-triangle2
                        , OpenGL
                        , LearnOpenGL
                        , array
+                       , GLUtil
     default-language:    Haskell2010
 
 executable shaders-uniform
@@ -77,6 +78,7 @@ executable shaders-uniform
                        , OpenGL
                        , LearnOpenGL
                        , array
+                       , GLUtil
     default-language:    Haskell2010
 
 executable shaders-interpolated
@@ -88,6 +90,7 @@ executable shaders-interpolated
                        , OpenGL
                        , LearnOpenGL
                        , array
+                       , GLUtil
     default-language:    Haskell2010
 
 executable shaders-using-object

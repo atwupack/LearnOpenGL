@@ -31,9 +31,7 @@ main = do
         clear [ColorBuffer]
         -- Draw our first triangle
         currentProgram $= Just (program shader)
-        bindVertexArrayObject $= Just vao
-        drawArrays Triangles 0 3
-        bindVertexArrayObject $= Nothing
+        withVAO vao $ drawArrays Triangles 0 3
         swapBuffers w
     deleteObjectName vao
     deleteObjectName vbo

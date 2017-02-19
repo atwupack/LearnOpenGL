@@ -6,6 +6,7 @@ import LOGL.Window
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
+import Graphics.GLUtil
 
 vertices :: [GLfloat]
 vertices = [
@@ -49,10 +50,8 @@ main = do
         clear [ColorBuffer]
         -- Draw our first triangle
         currentProgram $= Just prg
-        bindVertexArrayObject $= Just vao
         --drawArrays Triangles 0 3
-        drawElements Triangles 6 UnsignedInt nullPtr
-        bindVertexArrayObject $= Nothing
+        withVAO vao $ drawElements Triangles 6 UnsignedInt nullPtr
         swapBuffers w
     deleteObjectName vao
     deleteObjectName vbo

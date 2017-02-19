@@ -50,9 +50,7 @@ main = do
         textureBinding Texture2D $= Just t1
         setUniform shader "ourTexture2" (TextureUnit 1)
 
-        bindVertexArrayObject $= Just vao
-        drawElements Triangles 6 UnsignedInt nullPtr
-        bindVertexArrayObject $= Nothing
+        withVAO vao $ drawElements Triangles 6 UnsignedInt nullPtr
 
         swapBuffers w
     deleteObjectName vao

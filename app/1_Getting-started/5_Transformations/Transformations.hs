@@ -60,9 +60,7 @@ main = do
             mat = mkTransformation rot (V3 0.5 (-0.5) (0.0 :: GLfloat))
         setUniform shader "transform" mat
 
-        bindVertexArrayObject $= Just vao
-        drawElements Triangles 6 UnsignedInt nullPtr
-        bindVertexArrayObject $= Nothing
+        withVAO vao $ drawElements Triangles 6 UnsignedInt nullPtr
 
         swapBuffers w
     deleteObjectName vao

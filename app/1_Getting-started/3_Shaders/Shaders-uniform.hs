@@ -6,6 +6,7 @@ import LOGL.Window
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
+import Graphics.GLUtil
 
 vertices = [-0.5, -0.5, 0.0,
      0.5, -0.5, 0.0,
@@ -50,9 +51,7 @@ main = do
                 let greenValue = (sin timeValue / 2.0) + 0.5
                 vertexColorLocation <- get $ uniformLocation prg "ourColor"
                 uniform vertexColorLocation $= Color4 0.0 (realToFrac greenValue :: GLfloat) 0.0 1.0
-        bindVertexArrayObject $= Just vao
-        drawArrays Triangles 0 3
-        bindVertexArrayObject $= Nothing
+        withVAO vao $ drawArrays Triangles 0 3
         swapBuffers w
     deleteObjectName vao
     deleteObjectName vbo

@@ -64,9 +64,7 @@ main = do
         setUniform shader "view" view
         setUniform shader "projection" projection
 
-        bindVertexArrayObject $= Just vao
-        drawElements Triangles 6 UnsignedInt nullPtr
-        bindVertexArrayObject $= Nothing
+        withVAO vao $ drawElements Triangles 6 UnsignedInt nullPtr
 
         swapBuffers w
     deleteObjectName vao

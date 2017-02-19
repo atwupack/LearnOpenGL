@@ -46,14 +46,10 @@ main = do
 
         -- Draw our first triangle
         currentProgram $= Just (program shader)
-
         --activeTexture $= TextureUnit 0
         textureBinding Texture2D $= Just to
-        --setUniform shader "ourTexture" (TextureUnit 0)
 
-        bindVertexArrayObject $= Just vao
-        drawElements Triangles 6 UnsignedInt nullPtr
-        bindVertexArrayObject $= Nothing
+        withVAO vao $ drawElements Triangles 6 UnsignedInt nullPtr
 
         swapBuffers w
     deleteObjectName vao
