@@ -52,7 +52,7 @@ main = do
                 vertexColorLocation <- get $ uniformLocation prg "ourColor"
                 uniform vertexColorLocation $= Color4 0.0 (realToFrac greenValue :: GLfloat) 0.0 1.0
         withVAO vao $ drawArrays Triangles 0 3
-        swapBuffers w
+        swap w
     deleteObjectName vao
     deleteObjectName vbo
     terminate

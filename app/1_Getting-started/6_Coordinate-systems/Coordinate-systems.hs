@@ -66,7 +66,7 @@ main = do
 
         withVAO vao $ drawElements Triangles 6 UnsignedInt nullPtr
 
-        swapBuffers w
+        swap w
     deleteObjectName vao
     deleteObjectName vbo
     deleteObjectName ebo

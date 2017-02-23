@@ -48,7 +48,7 @@ main = do
         -- Draw our first triangle
         currentProgram $= Just prg
         withVAO vao $ drawArrays Triangles 0 3
-        swapBuffers w
+        swap w
     deleteObjectName vao
     deleteObjectName vbo
     terminate

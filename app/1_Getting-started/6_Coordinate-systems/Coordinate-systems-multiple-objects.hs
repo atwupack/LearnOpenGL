@@ -109,7 +109,7 @@ main = do
 
         withVAO vao $ mapM_ (drawCube shader) [0..9]
 
-        swapBuffers w
+        swap w
     deleteObjectName vao
     deleteObjectName vbo
     terminate

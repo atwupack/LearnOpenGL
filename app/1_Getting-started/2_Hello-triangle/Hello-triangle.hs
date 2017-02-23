@@ -41,7 +41,7 @@ main = do
         bindVertexArrayObject $= Just vao
         drawArrays Triangles 0 3
         bindVertexArrayObject $= Nothing
-        swapBuffers w
+        swap w
     deleteObjectName vao
     deleteObjectName vbo
     terminate

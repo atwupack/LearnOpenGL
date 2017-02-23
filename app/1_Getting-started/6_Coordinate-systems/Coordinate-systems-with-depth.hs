@@ -102,7 +102,7 @@ main = do
 
         withVAO vao $ drawArrays Triangles 0 36
 
-        swapBuffers w
+        swap w
     deleteObjectName vao
     deleteObjectName vbo
     terminate

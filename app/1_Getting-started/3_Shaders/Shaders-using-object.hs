@@ -32,7 +32,7 @@ main = do
         -- Draw our first triangle
         currentProgram $= Just (program shader)
         withVAO vao $ drawArrays Triangles 0 3
-        swapBuffers w
+        swap w
     deleteObjectName vao
     deleteObjectName vbo
     terminate

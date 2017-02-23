@@ -1,14 +1,20 @@
 module LOGL.Window
 (
- createAppWindow, runAppLoop
+ createAppWindow, runAppLoop, AppWindow, swap
 )
 where
 
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
 import Control.Monad.Loops
+import Reactive.Banana.Frameworks
+import Reactive.Banana
+import LOGL.FRP
+import Control.Applicative
 
-createAppWindow :: Int -> Int -> String ->IO Window
+data AppWindow = AppWindow { window :: Window, keyEvent :: MomentIO (Event KeyEvent)}
+
+createAppWindow :: Int -> Int -> String ->IO AppWindow
 createAppWindow width height title = do
     windowHint $ WindowHint'ContextVersionMajor 3
     windowHint $ WindowHint'ContextVersionMinor 3
@@ -21,14 +27,23 @@ createAppWindow width height title = do
             error "Could not create GLFW window"
         Just w -> do
             makeContextCurrent mw
-            setKeyCallback w $ Just keyCallback
+            --setKeyCallback w $ Just keyCallback
             (width,height) <- getFramebufferSize w
             GL.viewport $= (Position 0 0, Size (fromIntegral width) (fromIntegral height))
-            return w
+            keyE <- fromAddHandler <$> registerKeyboard w
+            return $ AppWindow w keyE
 
-keyCallback :: Window -> Key -> Int -> KeyState -> ModifierKeys -> IO ()
-keyCallback w Key'Escape _ KeyState'Pressed _ = setWindowShouldClose w True
-keyCallback _ _ _ _ _ = return ()
+runAppLoop :: AppWindow -> IO () -> IO ()
+runAppLoop win loop = do
+    let networkDesc :: MomentIO ()
+        networkDesc = do
+            keyE <- keyEvent win
+            let escE = filterKeyE keyE Key'Escape
+            reactimate $ setWindowShouldClose (window win) True <$ escE
+    network <- compile networkDesc
+    actuate network
+    whileM_ (not <$> windowShouldClose (window win)) loop
+    pause network
 
-runAppLoop :: Window -> IO () -> IO ()
-runAppLoop win = whileM_ (not <$> windowShouldClose win)
+swap :: AppWindow -> IO ()
+swap w = swapBuffers $ window w
