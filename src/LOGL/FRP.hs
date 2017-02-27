@@ -1,6 +1,7 @@
 module LOGL.FRP
 (
-    registerKeyboard, KeyEvent, filterKeyE
+    registerKeyboard, KeyEvent, filterKeyE,
+    registerWindowSize, WindowSizeEvent
 )
 where
 
@@ -15,6 +16,15 @@ registerKeyboard w = do
     (addHandler, fire) <- newAddHandler
     let keyCallback w k i s m = fire (w, k, i, s, m)
     setKeyCallback w $ Just keyCallback
+    return addHandler
+
+type WindowSizeEvent = (Window, Int, Int)
+
+registerWindowSize :: Window -> IO (AddHandler WindowSizeEvent)
+registerWindowSize w = do
+    (addHandler, fire) <- newAddHandler
+    let winSizeCallback w width height = fire (w, width, height)
+    setWindowSizeCallback w $ Just winSizeCallback
     return addHandler
 
 filterKeyE :: Event KeyEvent -> Key -> Event KeyEvent

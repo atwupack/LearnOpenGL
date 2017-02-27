@@ -12,38 +12,72 @@ import Reactive.Banana
 import LOGL.FRP
 import Control.Applicative
 
-data AppWindow = AppWindow { window :: Window, keyEvent :: MomentIO (Event KeyEvent)}
+data AppWindow = AppWindow {    title :: String,
+                                window :: Window,
+                                keyEvent :: MomentIO (Event KeyEvent),
+                                winSizeEvent :: MomentIO (Event WindowSizeEvent),
+                                idleEvent :: MomentIO (Event ()),
+                                fireIdle :: Handler ()}
 
 createAppWindow :: Int -> Int -> String ->IO AppWindow
-createAppWindow width height title = do
+createAppWindow width height t = do
     windowHint $ WindowHint'ContextVersionMajor 3
     windowHint $ WindowHint'ContextVersionMinor 3
     windowHint $ WindowHint'OpenGLProfile OpenGLProfile'Core
-    windowHint $ WindowHint'Resizable False
-    mw <- GLFW.createWindow width height title Nothing Nothing
+    windowHint $ WindowHint'Resizable True
+    mw <- GLFW.createWindow width height t Nothing Nothing
     case mw of
         Nothing -> do
             GLFW.terminate
             error "Could not create GLFW window"
         Just w -> do
             makeContextCurrent mw
-            --setKeyCallback w $ Just keyCallback
             (width,height) <- getFramebufferSize w
             GL.viewport $= (Position 0 0, Size (fromIntegral width) (fromIntegral height))
             keyE <- fromAddHandler <$> registerKeyboard w
-            return $ AppWindow w keyE
+            winSizeE <- fromAddHandler <$> registerWindowSize w
+            (addHandler, fire) <- newAddHandler
+            return AppWindow {  title = t,
+                                window = w,
+                                keyEvent = keyE,
+                                winSizeEvent = winSizeE,
+                                idleEvent = fromAddHandler addHandler,
+                                fireIdle = fire}
+
+runAppLoopEx :: AppWindow -> MomentIO () -> IO ()
+runAppLoopEx win net = do
+    let networkDesc :: MomentIO ()
+        networkDesc = do
+            -- close windw on ESC
+            keyE <- keyEvent win
+            let escE = filterKeyE keyE Key'Escape
+            reactimate $ setWindowShouldClose (window win) True <$ escE
+            -- react on window resize
+            winSizeE <- winSizeEvent win
+            reactimate $ handleWinResize <$> winSizeE
+            net
+    network <- compile networkDesc
+    actuate network
+    whileM_ (not <$> windowShouldClose (window win)) $ do
+        Just startTime <- getTime
+        fireIdle win ()
+        Just endTime <- getTime
+        let fps = 1.0 / (endTime - startTime)
+        setWindowTitle (window win) (title win ++ "(" ++ show fps ++ " fps)")
+    pause network
 
 runAppLoop :: AppWindow -> IO () -> IO ()
 runAppLoop win loop = do
     let networkDesc :: MomentIO ()
         networkDesc = do
-            keyE <- keyEvent win
-            let escE = filterKeyE keyE Key'Escape
-            reactimate $ setWindowShouldClose (window win) True <$ escE
-    network <- compile networkDesc
-    actuate network
-    whileM_ (not <$> windowShouldClose (window win)) loop
-    pause network
+            idleE <- idleEvent win
+            reactimate $ loop <$ idleE
+    runAppLoopEx win networkDesc
+
+handleWinResize :: WindowSizeEvent -> IO ()
+handleWinResize (win, width, height) = do
+    (width,height) <- getFramebufferSize win
+    GL.viewport $= (Position 0 0, Size (fromIntegral width) (fromIntegral height))
 
 swap :: AppWindow -> IO ()
 swap w = swapBuffers $ window w

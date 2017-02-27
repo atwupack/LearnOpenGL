@@ -13,31 +13,39 @@ build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
 
+flag buildAll
+  Description: Build all programs
+  Default:     False
+
 library
-  hs-source-dirs:      src
-  exposed-modules:     LOGL.Window, LOGL.Texture, LOGL.FRP
-  build-depends:       base >= 4.7 && < 5
-                     , OpenGL
-                     , bytestring
-                     , filepath
-                     , OpenGLRaw
-                     , GLFW-b
-                     , monad-loops
-                     , GLUtil
-                     , reactive-banana
-  default-language:    Haskell2010
+    hs-source-dirs:      src
+    exposed-modules:     LOGL.Window, LOGL.Texture, LOGL.FRP
+    build-depends:       base >= 4.7 && < 5
+                        , OpenGL
+                        , bytestring
+                        , filepath
+                        , OpenGLRaw
+                        , GLFW-b
+                        , monad-loops
+                        , GLUtil
+                        , reactive-banana
+    default-language:    Haskell2010
 
 executable hello-window
-  hs-source-dirs:      app/1_Getting-started/1_Hello-window
-  main-is:             Hello-window.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base
-                     , GLFW-b
-                     , OpenGL
-                     , monad-loops
-  default-language:    Haskell2010
+    if !flag(buildAll)
+        buildable:       False
+    hs-source-dirs:      app/1_Getting-started/1_Hello-window
+    main-is:             Hello-window.hs
+    ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+    build-depends:       base
+                        , GLFW-b
+                        , OpenGL
+                        , monad-loops
+    default-language:    Haskell2010
 
 executable hello-window2
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/1_Hello-window
     main-is:             Hello-window2.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -48,6 +56,8 @@ executable hello-window2
     default-language:    Haskell2010
 
 executable hello-triangle
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/2_Hello-triangle
     main-is:             Hello-triangle.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -59,6 +69,8 @@ executable hello-triangle
     default-language:    Haskell2010
 
 executable hello-triangle2
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/2_Hello-triangle
     main-is:             Hello-triangle2.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -71,6 +83,8 @@ executable hello-triangle2
     default-language:    Haskell2010
 
 executable shaders-uniform
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/3_Shaders
     main-is:             Shaders-uniform.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -83,6 +97,8 @@ executable shaders-uniform
     default-language:    Haskell2010
 
 executable shaders-interpolated
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/3_Shaders
     main-is:             Shaders-interpolated.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -95,6 +111,8 @@ executable shaders-interpolated
     default-language:    Haskell2010
 
 executable shaders-using-object
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/3_Shaders
     main-is:             Shaders-using-object.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -108,6 +126,8 @@ executable shaders-using-object
     default-language:    Haskell2010
 
 executable textures
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/4_Textures
     main-is:             Textures.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -120,6 +140,8 @@ executable textures
     default-language:    Haskell2010
 
 executable textures-combined
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/4_Textures
     main-is:             Textures-combined.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -132,6 +154,8 @@ executable textures-combined
     default-language:    Haskell2010
 
 executable transformations
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/5_Transformations
     main-is:             Transformations.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -145,6 +169,8 @@ executable transformations
     default-language:    Haskell2010
 
 executable coordinate-systems
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/6_Coordinate-systems
     main-is:             Coordinate-systems.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -158,6 +184,8 @@ executable coordinate-systems
     default-language:    Haskell2010
 
 executable coordinate-systems-with-depth
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/6_Coordinate-systems
     main-is:             Coordinate-systems-with-depth.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -171,6 +199,8 @@ executable coordinate-systems-with-depth
     default-language:    Haskell2010
 
 executable coordinate-systems-multiple-objects
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/6_Coordinate-systems
     main-is:             Coordinate-systems-multiple-objects.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -184,6 +214,8 @@ executable coordinate-systems-multiple-objects
     default-language:    Haskell2010
 
 executable camera-circle
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/1_Getting-started/7_Camera
     main-is:             Camera-circle.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
