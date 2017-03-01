@@ -239,6 +239,8 @@ executable camera-keyboard
                        , GLUtil
                        , LearnOpenGL
                        , linear
+                       , reactive-banana
+                       , containers
     default-language:    Haskell2010
 
 source-repository head

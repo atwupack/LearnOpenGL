@@ -1,6 +1,6 @@
 module LOGL.Window
 (
- createAppWindow, runAppLoop, AppWindow, swap
+ createAppWindow, runAppLoop, AppWindow, swap, runAppLoopEx, idleEvent, keyEvent
 )
 where
 
@@ -50,7 +50,7 @@ runAppLoopEx win net = do
         networkDesc = do
             -- close windw on ESC
             keyE <- keyEvent win
-            let escE = filterKeyE keyE Key'Escape
+            let escE = filterKeyPressE keyE Key'Escape
             reactimate $ setWindowShouldClose (window win) True <$ escE
             -- react on window resize
             winSizeE <- winSizeEvent win

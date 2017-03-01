@@ -1,6 +1,6 @@
 module LOGL.FRP
 (
-    registerKeyboard, KeyEvent, filterKeyE,
+    registerKeyboard, KeyEvent, filterKeyPressE, filterKeyReleaseE,
     registerWindowSize, WindowSizeEvent
 )
 where
@@ -27,8 +27,14 @@ registerWindowSize w = do
     setWindowSizeCallback w $ Just winSizeCallback
     return addHandler
 
-filterKeyE :: Event KeyEvent -> Key -> Event KeyEvent
-filterKeyE e key = filterE f e
+filterKeyPressE :: Event KeyEvent -> Key -> Event KeyEvent
+filterKeyPressE e key = filterE f e
     where
         f :: KeyEvent -> Bool
-        f (w, k, i, s, m) = k == Key'Escape && s == KeyState'Pressed
+        f (w, k, i, s, m) = k == key && s == KeyState'Pressed
+
+filterKeyReleaseE :: Event KeyEvent -> Key -> Event KeyEvent
+filterKeyReleaseE e key = filterE f e
+    where
+        f :: KeyEvent -> Bool
+        f (w, k, i, s, m) = k == key && s == KeyState'Released
