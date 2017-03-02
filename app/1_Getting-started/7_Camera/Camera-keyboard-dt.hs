@@ -80,8 +80,8 @@ cubePositions = [
 data Camera = Camera {  pos :: V3 GLfloat,
                         front :: V3 GLfloat,
                         up :: V3 GLfloat,
-                        speed :: GLfloat,
-                        pressedKeys :: Set Key}
+                        pressedKeys :: Set Key,
+                        lastFrame :: Double}
     deriving (Eq, Show)
 
 main :: IO ()
@@ -100,17 +100,18 @@ main = do
     t1 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "awesomeface3.png")
 
     -- init camera
-    let initCam = Camera { pos = V3 0.0 0.0 3.0, front = V3 0.0 0.0 (-1.0) , up = V3 0.0 1.0 0.0, speed = 0.01,
-                            pressedKeys = empty}
+    let initCam = Camera { pos = V3 0.0 0.0 3.0, front = V3 0.0 0.0 (-1.0) , up = V3 0.0 1.0 0.0,
+                            pressedKeys = empty, lastFrame = 0.0}
 
     --polygonMode $= (Line, Line)
     let networkDescription :: MomentIO ()
         networkDescription = mdo
             keyE <- keyEvent w
             idleE <- idleEvent w
+            timeB <- currentTimeB
             camB <- accumB initCam $ unions [
                         handleKeyEvent <$> keyE,
-                        doMovement <$ idleE]
+                        doMovement <$> (timeB <@ idleE)]
             reactimate $ drawScene shader t0 t1 vao w <$> (camB <@ idleE)
     runAppLoopEx w networkDescription
 
@@ -123,29 +124,30 @@ handleKeyEvent  (w, k, i, KeyState'Pressed, m) cam = cam { pressedKeys = insert 
 handleKeyEvent  (w, k, i, KeyState'Released, m) cam = cam { pressedKeys = delete k (pressedKeys cam ) }
 handleKeyEvent  (w, k, i, _, m) cam = cam
 
-doMovement :: Camera -> Camera
-doMovement cam = afterMoveRight
+doMovement :: Double -> Camera -> Camera
+doMovement time cam = afterMoveRight {lastFrame = time}
     where
+        speed =   5.0 * realToFrac (time - lastFrame cam)
         upPressed = member Key'W (pressedKeys cam)
         downPressed = member Key'S (pressedKeys cam)
         leftPressed = member Key'A (pressedKeys cam)
         rightPressed = member Key'D (pressedKeys cam)
-        afterZoomIn = if upPressed then moveForeward cam else cam
-        afterZoomOut = if downPressed then moveBackward afterZoomIn else afterZoomIn
-        afterMoveLeft = if leftPressed then moveLeft afterZoomOut else afterZoomOut
-        afterMoveRight = if rightPressed then moveRight afterMoveLeft else afterMoveLeft
+        afterZoomIn = if upPressed then moveForeward speed cam else cam
+        afterZoomOut = if downPressed then moveBackward speed afterZoomIn else afterZoomIn
+        afterMoveLeft = if leftPressed then moveLeft speed afterZoomOut else afterZoomOut
+        afterMoveRight = if rightPressed then moveRight speed afterMoveLeft else afterMoveLeft
 
-moveForeward :: Camera -> Camera
-moveForeward cam = cam { pos = pos cam ^+^ (speed cam *^ front cam) }
+moveForeward :: GLfloat -> Camera -> Camera
+moveForeward speed cam = cam { pos = pos cam ^+^ (speed *^ front cam) }
 
-moveBackward :: Camera -> Camera
-moveBackward cam = cam { pos = pos cam ^-^ (speed cam *^ front cam) }
+moveBackward :: GLfloat -> Camera -> Camera
+moveBackward speed cam = cam { pos = pos cam ^-^ (speed *^ front cam) }
 
-moveLeft :: Camera -> Camera
-moveLeft cam = cam { pos = pos cam ^-^ (speed cam *^ normalize (cross (front cam ) (up cam)))}
+moveLeft :: GLfloat -> Camera -> Camera
+moveLeft speed cam = cam { pos = pos cam ^-^ (speed *^ normalize (cross (front cam ) (up cam)))}
 
-moveRight :: Camera -> Camera
-moveRight cam = cam { pos = pos cam ^+^ (speed cam *^ normalize (cross (front cam ) (up cam)))}
+moveRight :: GLfloat -> Camera -> Camera
+moveRight speed cam = cam { pos = pos cam ^+^ (speed *^ normalize (cross (front cam ) (up cam)))}
 
 drawScene :: ShaderProgram -> TextureObject -> TextureObject -> VertexArrayObject -> AppWindow -> Camera -> IO ()
 drawScene shader t0 t1 vao w cam = do

@@ -1,13 +1,14 @@
 module LOGL.FRP
 (
     registerKeyboard, KeyEvent, filterKeyPressE, filterKeyReleaseE,
-    registerWindowSize, WindowSizeEvent
+    registerWindowSize, WindowSizeEvent, currentTimeB
 )
 where
 
 import Graphics.UI.GLFW as GLFW
 import Reactive.Banana.Frameworks
 import Reactive.Banana
+import Data.Maybe
 
 type KeyEvent = (Window, Key, Int, KeyState, ModifierKeys)
 
@@ -38,3 +39,6 @@ filterKeyReleaseE e key = filterE f e
     where
         f :: KeyEvent -> Bool
         f (w, k, i, s, m) = k == key && s == KeyState'Released
+
+currentTimeB :: MomentIO (Behavior Double)
+currentTimeB = fromPoll $ fromMaybe 0.0 <$> getTime
