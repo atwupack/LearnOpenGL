@@ -16,6 +16,8 @@ data AppWindow = AppWindow {    title :: String,
                                 window :: Window,
                                 keyEvent :: MomentIO (Event KeyEvent),
                                 winSizeEvent :: MomentIO (Event WindowSizeEvent),
+                                cursorPosEvent :: MomentIO (Event CursorPosEvent),
+                                scrollEvent :: MomentIO (Event ScrollEvent),
                                 idleEvent :: MomentIO (Event ()),
                                 fireIdle :: Handler ()}
 
@@ -36,11 +38,15 @@ createAppWindow width height t = do
             GL.viewport $= (Position 0 0, Size (fromIntegral width) (fromIntegral height))
             keyE <- fromAddHandler <$> registerKeyboard w
             winSizeE <- fromAddHandler <$> registerWindowSize w
+            cursorPosE <- fromAddHandler <$> registerCursorPos w
+            scrollE <- fromAddHandler <$> registerScroll w
             (addHandler, fire) <- newAddHandler
             return AppWindow {  title = t,
                                 window = w,
                                 keyEvent = keyE,
                                 winSizeEvent = winSizeE,
+                                cursorPosEvent = cursorPosE,
+                                scrollEvent = scrollE,
                                 idleEvent = fromAddHandler addHandler,
                                 fireIdle = fire}
 

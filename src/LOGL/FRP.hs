@@ -1,7 +1,10 @@
 module LOGL.FRP
 (
     registerKeyboard, KeyEvent, filterKeyPressE, filterKeyReleaseE,
-    registerWindowSize, WindowSizeEvent, currentTimeB
+    registerWindowSize, WindowSizeEvent,
+    currentTimeB,
+    registerCursorPos, CursorPosEvent,
+    registerScroll, ScrollEvent
 )
 where
 
@@ -26,6 +29,24 @@ registerWindowSize w = do
     (addHandler, fire) <- newAddHandler
     let winSizeCallback w width height = fire (w, width, height)
     setWindowSizeCallback w $ Just winSizeCallback
+    return addHandler
+
+type CursorPosEvent = (Window, Double, Double)
+
+registerCursorPos :: Window -> IO (AddHandler CursorPosEvent)
+registerCursorPos w = do
+    (addHandler, fire) <- newAddHandler
+    let cursorPosCallback w x y = fire (w, x, y)
+    setCursorPosCallback w $ Just cursorPosCallback
+    return addHandler
+
+type ScrollEvent = (Window, Double, Double)
+
+registerScroll :: Window -> IO (AddHandler ScrollEvent)
+registerScroll w = do
+    (addHandler, fire) <- newAddHandler
+    let scrollCallback w x y = fire (w, x, y)
+    setScrollCallback w $ Just scrollCallback
     return addHandler
 
 filterKeyPressE :: Event KeyEvent -> Key -> Event KeyEvent
