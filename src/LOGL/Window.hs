@@ -1,6 +1,7 @@
 module LOGL.Window
 (
- createAppWindow, runAppLoop, AppWindow, swap, runAppLoopEx, idleEvent, keyEvent
+    createAppWindow, runAppLoop, AppWindow, swap, runAppLoopEx, idleEvent, keyEvent, cursorPosEvent,
+    window, scrollEvent
 )
 where
 
