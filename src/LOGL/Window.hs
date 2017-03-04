@@ -1,7 +1,7 @@
 module LOGL.Window
 (
     createAppWindow, runAppLoop, AppWindow, swap, runAppLoopEx, idleEvent, keyEvent, cursorPosEvent,
-    window, scrollEvent
+    window, scrollEvent, keyBehavior, Keys, keyPressed
 )
 where
 
@@ -9,9 +9,10 @@ import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
 import Control.Monad.Loops
 import Reactive.Banana.Frameworks
-import Reactive.Banana
+import Reactive.Banana hiding (empty)
 import LOGL.FRP
-import Control.Applicative
+import Control.Applicative hiding (empty)
+import Data.Set hiding (unions)
 
 data AppWindow = AppWindow {    title :: String,
                                 window :: Window,
@@ -88,3 +89,20 @@ handleWinResize (win, width, height) = do
 
 swap :: AppWindow -> IO ()
 swap w = swapBuffers $ window w
+
+-- | functions related to tracking keys
+
+type Keys = Set Key
+
+keyBehavior :: AppWindow -> MomentIO (Behavior Keys)
+keyBehavior win = do
+    keyE <- keyEvent win
+    accumB empty $ unions [handleKeyEvent <$> keyE]
+
+handleKeyEvent ::  KeyEvent -> Keys -> Keys
+handleKeyEvent  (w, k, i, KeyState'Pressed, m) keys = insert k keys
+handleKeyEvent  (w, k, i, KeyState'Released, m) keys = delete k keys
+handleKeyEvent  (w, k, i, _, m) keys = keys
+
+keyPressed :: Key -> Keys -> Bool
+keyPressed = member

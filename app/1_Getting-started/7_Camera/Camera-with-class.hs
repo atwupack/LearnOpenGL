@@ -18,7 +18,6 @@ import Linear.Metric
 import Reactive.Banana.Frameworks
 import Reactive.Banana.Combinators hiding (empty)
 import LOGL.FRP
-import Data.Set hiding (unions)
 
 vertices :: [GLfloat]
 vertices = [
@@ -80,7 +79,6 @@ cubePositions = [
 data Camera = Camera {  pos :: V3 GLfloat,
                         front :: V3 GLfloat,
                         up :: V3 GLfloat,
-                        pressedKeys :: Set Key,
                         lastFrame :: Double,
                         lastX :: GLfloat,
                         lastY :: GLfloat,
@@ -109,22 +107,21 @@ main = do
 
     -- init camera
     let initCam = Camera { pos = V3 0.0 0.0 3.0, front = V3 0.0 0.0 (-1.0) , up = V3 0.0 1.0 0.0,
-                            pressedKeys = empty, lastFrame = 0.0, lastX = 400.0, lastY = 300.0, yaw = -90.0,
+                            lastFrame = 0.0, lastX = 400.0, lastY = 300.0, yaw = -90.0,
                             pitch = 0.0, firstMouse = True, fov = 45.0}
 
     --polygonMode $= (Line, Line)
     let networkDescription :: MomentIO ()
         networkDescription = mdo
-            keyE <- keyEvent w
             posE <- cursorPosEvent w
             scrollE <- scrollEvent w
             idleE <- idleEvent w
             timeB <- currentTimeB
+            keyB <- keyBehavior w
             camB <- accumB initCam $ unions [
                         handleScrollEvent <$> scrollE,
                         handlePosEvent <$> posE,
-                        handleKeyEvent <$> keyE,
-                        doMovement <$> (timeB <@ idleE)]
+                        (doMovement <$> keyB ) <@> (timeB <@ idleE)]
             reactimate $ drawScene shader t0 t1 vao w <$> (camB <@ idleE)
     runAppLoopEx w networkDescription
 
@@ -169,19 +166,14 @@ restrictPitch p
     | p < (-89.0) = -89.0
     | otherwise = p
 
-handleKeyEvent ::  KeyEvent -> Camera -> Camera
-handleKeyEvent  (w, k, i, KeyState'Pressed, m) cam = cam { pressedKeys = insert k (pressedKeys cam ) }
-handleKeyEvent  (w, k, i, KeyState'Released, m) cam = cam { pressedKeys = delete k (pressedKeys cam ) }
-handleKeyEvent  (w, k, i, _, m) cam = cam
-
-doMovement :: Double -> Camera -> Camera
-doMovement time cam = afterMoveRight {lastFrame = time}
+doMovement :: Keys -> Double -> Camera -> Camera
+doMovement keys time cam = afterMoveRight {lastFrame = time}
     where
         speed =   5.0 * realToFrac (time - lastFrame cam)
-        upPressed = member Key'W (pressedKeys cam)
-        downPressed = member Key'S (pressedKeys cam)
-        leftPressed = member Key'A (pressedKeys cam)
-        rightPressed = member Key'D (pressedKeys cam)
+        upPressed = keyPressed Key'W keys
+        downPressed = keyPressed Key'S keys
+        leftPressed = keyPressed Key'A keys
+        rightPressed = keyPressed Key'D keys
         afterZoomIn = if upPressed then moveForeward speed cam else cam
         afterZoomOut = if downPressed then moveBackward speed afterZoomIn else afterZoomIn
         afterMoveLeft = if leftPressed then moveLeft speed afterZoomOut else afterZoomOut

@@ -29,6 +29,7 @@ library
                         , monad-loops
                         , GLUtil
                         , reactive-banana
+                        , containers
     default-language:    Haskell2010
 
 executable hello-window
