@@ -102,12 +102,14 @@ main = do
         textureBinding Texture2D $= Just t1
         setUniform shader "ourTexture2" (TextureUnit 1)
 
+        (width, height) <- getFramebufferSize $ window w
+
         Just time <- getTime
         let radius = 10.0 :: GLfloat
             camX = radius * sin (realToFrac time)
             camZ = radius * cos (realToFrac time)
             view = lookAt (V3 camX 0.0 camZ) (V3 0.0 0.0 0.0) (V3 0.0 1.0 (0.0 :: GLfloat))
-            projection = perspective (pi / 4.0) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
+            projection = perspective (pi / 4.0) (fromIntegral width / fromIntegral height) 0.1 (100.0 :: GLfloat)
         setUniform shader "view" view
         setUniform shader "projection" projection
 

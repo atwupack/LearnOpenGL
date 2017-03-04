@@ -164,8 +164,10 @@ drawScene shader t0 t1 vao w cam = do
     textureBinding Texture2D $= Just t1
     setUniform shader "ourTexture2" (TextureUnit 1)
 
+    (width, height) <- getFramebufferSize $ window w
+
     let view = lookAt (pos cam) (pos cam + front cam) (up cam)
-        projection = perspective (pi / 4.0) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
+        projection = perspective (pi / 4.0) (fromIntegral width / fromIntegral height) 0.1 (100.0 :: GLfloat)
     setUniform shader "view" view
     setUniform shader "projection" projection
 

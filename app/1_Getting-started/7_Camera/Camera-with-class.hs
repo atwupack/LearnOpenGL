@@ -3,6 +3,7 @@ module Main where
 
 import LOGL.Window
 import LOGL.Texture
+import LOGL.Camera
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL hiding (normalize)
@@ -76,7 +77,7 @@ cubePositions = [
     V3 1.5  0.2 (-1.5),
     V3 (-1.3)  1.0 (-1.5)]
 
-data Camera = Camera {  pos :: V3 GLfloat,
+data Camera2 = Camera2 {  pos :: V3 GLfloat,
                         front :: V3 GLfloat,
                         up :: V3 GLfloat,
                         lastFrame :: Double,
@@ -106,10 +107,7 @@ main = do
     t1 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "awesomeface3.png")
 
     -- init camera
-    let initCam = Camera { pos = V3 0.0 0.0 3.0, front = V3 0.0 0.0 (-1.0) , up = V3 0.0 1.0 0.0,
-                            lastFrame = 0.0, lastX = 400.0, lastY = 300.0, yaw = -90.0,
-                            pitch = 0.0, firstMouse = True, fov = 45.0}
-
+    let initCam = createCamera (V3 0.0 0.0 3.0) (V3 0.0 1.0 0.0) (-90.0) 0.0
     --polygonMode $= (Line, Line)
     let networkDescription :: MomentIO ()
         networkDescription = mdo
@@ -130,41 +128,16 @@ main = do
     terminate
 
 handleScrollEvent :: ScrollEvent -> Camera -> Camera
-handleScrollEvent (w, xoffset, yoffset) cam = cam { fov = restrictFov newFov}
-    where
-        newFov = fov cam - realToFrac yoffset
-
-restrictFov :: GLfloat -> GLfloat
-restrictFov f
-    | f < 1.0 = 1.0
-    | f > 45.0 = 45.0
-    | otherwise = f
+handleScrollEvent (w, xoffset, yoffset) cam = processMouseScroll cam yoffset
 
 handlePosEvent :: CursorPosEvent -> Camera -> Camera
-handlePosEvent (w, xpos, ypos) cam = cam {lastX = realToFrac xpos, lastY = realToFrac ypos,
-                                        yaw = newYaw, pitch = newPitch,
-                                        front = normalize (V3 newFrontX newFrontY newFrontZ),
-                                        firstMouse = False}
+handlePosEvent (w, xpos, ypos) cam = processMouseMovement cam xoffset yoffset
     where
         lx = if firstMouse cam then realToFrac xpos else lastX cam
         ly = if firstMouse cam then realToFrac ypos else lastY cam
         sensivity = 0.5
         xoffset = ( realToFrac xpos - lx) * sensivity
         yoffset = (ly - realToFrac ypos) * sensivity
-        newYaw = yaw cam + xoffset
-        newPitch = restrictPitch $ pitch cam + yoffset
-        newFrontX = cos (radians newYaw) * cos (radians newPitch)
-        newFrontY = sin (radians newPitch)
-        newFrontZ = sin (radians newYaw) * cos (radians newPitch)
-
-radians :: GLfloat -> GLfloat
-radians deg = pi / 180.0 * deg
-
-restrictPitch :: GLfloat -> GLfloat
-restrictPitch p
-    | p > 89.0 = 89.0
-    | p < (-89.0) = -89.0
-    | otherwise = p
 
 doMovement :: Keys -> Double -> Camera -> Camera
 doMovement keys time cam = afterMoveRight {lastFrame = time}
@@ -174,10 +147,10 @@ doMovement keys time cam = afterMoveRight {lastFrame = time}
         downPressed = keyPressed Key'S keys
         leftPressed = keyPressed Key'A keys
         rightPressed = keyPressed Key'D keys
-        afterZoomIn = if upPressed then moveForeward speed cam else cam
-        afterZoomOut = if downPressed then moveBackward speed afterZoomIn else afterZoomIn
-        afterMoveLeft = if leftPressed then moveLeft speed afterZoomOut else afterZoomOut
-        afterMoveRight = if rightPressed then moveRight speed afterMoveLeft else afterMoveLeft
+        afterZoomIn = if upPressed then processKeyboard ForwardM cam speed cam else cam
+        afterZoomOut = if downPressed then processKeyboard BackwardM afterZoomIn speed else afterZoomIn
+        afterMoveLeft = if leftPressed then processKeyboard LeftM afterZoomOut speed else afterZoomOut
+        afterMoveRight = if rightPressed then processKeyboard RightM afterMoveLeft speed else afterMoveLeft
 
 moveForeward :: GLfloat -> Camera -> Camera
 moveForeward speed cam = cam { pos = pos cam ^+^ (speed *^ front cam) }
@@ -208,8 +181,8 @@ drawScene shader t0 t1 vao w cam = do
     textureBinding Texture2D $= Just t1
     setUniform shader "ourTexture2" (TextureUnit 1)
 
-    let view = lookAt (pos cam) (pos cam + front cam) (up cam)
-        projection = perspective (radians (fov cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
+    let view = viewMatrix cam
+        projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
     setUniform shader "view" view
     setUniform shader "projection" projection
 
