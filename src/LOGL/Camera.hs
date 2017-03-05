@@ -25,11 +25,12 @@ data Camera a = Camera {  position :: V3 a,
                         movementSpeed :: a,
                         mouseSensitivity :: a,
                         zoom :: a}
+    deriving (Show)
 
 defaultCamera :: (RealFloat a, Epsilon a) => Camera a
 defaultCamera = Camera { yaw = -90.0, pitch = 0.0 , movementSpeed = 3.0, mouseSensitivity = 0.25, zoom = 45.0,
-                        front = V3 0.0 0.0 (-1.0), position = V3 0.0 0.0 0.0, up = V3 0.0 0.0 0.0,
-                        right = V3 0.0 0.0 0.0, worldUp = V3 0.0 0.0 0.0}
+                        front = V3 0.0 0.0 (-1.0), position = V3 0.0 0.0 0.0, up = V3 0.0 1.0 0.0,
+                        right = V3 0.0 0.0 0.0, worldUp = V3 0.0 1.0 0.0}
 
 createCamera :: (RealFloat a, Epsilon a) => V3 a -> V3 a -> a -> a -> Camera a
 createCamera pos up y p = updateCameraVectors ( defaultCamera { position = pos, worldUp = up, yaw = y, pitch = p } )
@@ -40,7 +41,7 @@ viewMatrix cam = lookAt (position cam) (position cam + front cam) (up cam)
 processMouseMovement :: (RealFloat a, Epsilon a) => Camera a -> a -> a -> Bool -> Camera a
 processMouseMovement cam xoffset yoffset constrainPitch =
     updateCameraVectors (cam {   yaw = yaw cam + xoffset * mouseSensitivity cam,
-            pitch = restrictPitch constrainPitch (pitch cam + xoffset * mouseSensitivity cam) })
+            pitch = restrictPitch constrainPitch (pitch cam + yoffset * mouseSensitivity cam) })
 
 restrictPitch :: (RealFloat a) => Bool ->  a -> a
 restrictPitch enabled p
@@ -74,11 +75,11 @@ radians :: (RealFloat a) => a -> a
 radians deg = pi / 180.0 * deg
 
 updateCameraVectors :: (RealFloat a, Epsilon a) => Camera a -> Camera a
-updateCameraVectors cam = cam { front = normalize (V3 newFrontX newFrontY newFrontZ),
-        right = newRight, up = newUp}
+updateCameraVectors cam = cam { front = newFront, right = newRight, up = newUp}
     where
         newFrontX = cos (radians (yaw cam)) * cos (radians (pitch cam))
         newFrontY = sin (radians (pitch cam))
         newFrontZ = sin (radians (yaw cam)) * cos (radians (pitch cam))
-        newRight = normalize $ cross (front cam) (worldUp cam)
-        newUp = normalize $ cross (right cam) (front cam)
+        newFront = normalize ( V3 newFrontX newFrontY newFrontZ )
+        newRight = normalize $ cross newFront (worldUp cam)
+        newUp = normalize $ cross newRight newFront

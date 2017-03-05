@@ -77,17 +77,12 @@ cubePositions = [
     V3 1.5  0.2 (-1.5),
     V3 (-1.3)  1.0 (-1.5)]
 
-data Camera2 = Camera2 {  pos :: V3 GLfloat,
-                        front :: V3 GLfloat,
-                        up :: V3 GLfloat,
+data AppState = AppState { camera :: Camera GLfloat,
                         lastFrame :: Double,
                         lastX :: GLfloat,
                         lastY :: GLfloat,
-                        yaw :: GLfloat,
-                        pitch :: GLfloat,
-                        firstMouse :: Bool,
-                        fov :: GLfloat}
-    deriving (Eq, Show)
+                        firstMouse :: Bool}
+    deriving (Show)
 
 main :: IO ()
 main = do
@@ -106,8 +101,12 @@ main = do
     t0 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "container.jpg")
     t1 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "awesomeface3.png")
 
-    -- init camera
-    let initCam = createCamera (V3 0.0 0.0 3.0) (V3 0.0 1.0 0.0) (-90.0) 0.0
+    let initState = AppState {  camera = createCamera (V3 0.0 0.0 3.0) (V3 0.0 1.0 0.0) (-90.0) 0.0,
+                                firstMouse = True,
+                                lastX = 400.0,
+                                lastY = 300.0,
+                                lastFrame = 0.0}
+
     --polygonMode $= (Line, Line)
     let networkDescription :: MomentIO ()
         networkDescription = mdo
@@ -116,56 +115,46 @@ main = do
             idleE <- idleEvent w
             timeB <- currentTimeB
             keyB <- keyBehavior w
-            camB <- accumB initCam $ unions [
+            stateB <- accumB initState $ unions [
                         handleScrollEvent <$> scrollE,
                         handlePosEvent <$> posE,
                         (doMovement <$> keyB ) <@> (timeB <@ idleE)]
-            reactimate $ drawScene shader t0 t1 vao w <$> (camB <@ idleE)
+            reactimate $ drawScene shader t0 t1 vao w <$> (stateB <@ idleE)
     runAppLoopEx w networkDescription
 
     deleteObjectName vao
     deleteObjectName vbo
     terminate
 
-handleScrollEvent :: ScrollEvent -> Camera -> Camera
-handleScrollEvent (w, xoffset, yoffset) cam = processMouseScroll cam yoffset
+handleScrollEvent :: ScrollEvent -> AppState -> AppState
+handleScrollEvent (w, xoffset, yoffset) state = state { camera = processMouseScroll (camera state) (realToFrac yoffset) }
 
-handlePosEvent :: CursorPosEvent -> Camera -> Camera
-handlePosEvent (w, xpos, ypos) cam = processMouseMovement cam xoffset yoffset
+handlePosEvent :: CursorPosEvent -> AppState -> AppState
+handlePosEvent (w, xpos, ypos) state = state { lastX = realToFrac xpos, lastY = realToFrac ypos, firstMouse = False,
+                                                camera = processMouseMovement cam xoffset yoffset True }
     where
-        lx = if firstMouse cam then realToFrac xpos else lastX cam
-        ly = if firstMouse cam then realToFrac ypos else lastY cam
-        sensivity = 0.5
-        xoffset = ( realToFrac xpos - lx) * sensivity
-        yoffset = (ly - realToFrac ypos) * sensivity
+        cam = camera state
+        lx = if firstMouse state then realToFrac xpos else lastX state
+        ly = if firstMouse state then realToFrac ypos else lastY state
+        xoffset =  realToFrac xpos - lx
+        yoffset = ly - realToFrac ypos
 
-doMovement :: Keys -> Double -> Camera -> Camera
-doMovement keys time cam = afterMoveRight {lastFrame = time}
+doMovement :: Keys -> Double -> AppState -> AppState
+doMovement keys time state = state { camera = afterMoveRight , lastFrame = time}
     where
-        speed =   5.0 * realToFrac (time - lastFrame cam)
+        cam = camera state
+        deltaTime = realToFrac $ time - lastFrame state
         upPressed = keyPressed Key'W keys
         downPressed = keyPressed Key'S keys
         leftPressed = keyPressed Key'A keys
         rightPressed = keyPressed Key'D keys
-        afterZoomIn = if upPressed then processKeyboard ForwardM cam speed cam else cam
-        afterZoomOut = if downPressed then processKeyboard BackwardM afterZoomIn speed else afterZoomIn
-        afterMoveLeft = if leftPressed then processKeyboard LeftM afterZoomOut speed else afterZoomOut
-        afterMoveRight = if rightPressed then processKeyboard RightM afterMoveLeft speed else afterMoveLeft
+        afterZoomIn = if upPressed then processKeyboard cam ForwardM deltaTime else cam
+        afterZoomOut = if downPressed then processKeyboard afterZoomIn BackwardM  deltaTime else afterZoomIn
+        afterMoveLeft = if leftPressed then processKeyboard afterZoomOut LeftM  deltaTime else afterZoomOut
+        afterMoveRight = if rightPressed then processKeyboard afterMoveLeft RightM  deltaTime else afterMoveLeft
 
-moveForeward :: GLfloat -> Camera -> Camera
-moveForeward speed cam = cam { pos = pos cam ^+^ (speed *^ front cam) }
-
-moveBackward :: GLfloat -> Camera -> Camera
-moveBackward speed cam = cam { pos = pos cam ^-^ (speed *^ front cam) }
-
-moveLeft :: GLfloat -> Camera -> Camera
-moveLeft speed cam = cam { pos = pos cam ^-^ (speed *^ normalize (cross (front cam ) (up cam)))}
-
-moveRight :: GLfloat -> Camera -> Camera
-moveRight speed cam = cam { pos = pos cam ^+^ (speed *^ normalize (cross (front cam ) (up cam)))}
-
-drawScene :: ShaderProgram -> TextureObject -> TextureObject -> VertexArrayObject -> AppWindow -> Camera -> IO ()
-drawScene shader t0 t1 vao w cam = do
+drawScene :: ShaderProgram -> TextureObject -> TextureObject -> VertexArrayObject -> AppWindow -> AppState -> IO ()
+drawScene shader t0 t1 vao w state = do
     pollEvents
     clearColor $= Color4 0.2 0.3 0.3 1.0
     clear [ColorBuffer, DepthBuffer]
@@ -181,7 +170,8 @@ drawScene shader t0 t1 vao w cam = do
     textureBinding Texture2D $= Just t1
     setUniform shader "ourTexture2" (TextureUnit 1)
 
-    let view = viewMatrix cam
+    let cam = camera state
+        view = viewMatrix cam
         projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
     setUniform shader "view" view
     setUniform shader "projection" projection
