@@ -18,6 +18,7 @@ import Linear.Metric
 import Reactive.Banana.Frameworks
 import Reactive.Banana.Combinators hiding (empty)
 import LOGL.FRP
+import LOGL.Objects
 
 cubePositions :: [V3 GLfloat]
 cubePositions = [
