@@ -21,19 +21,6 @@ import Reactive.Banana.Combinators hiding (empty)
 import LOGL.FRP
 import LOGL.Objects
 
-cubePositions :: [V3 GLfloat]
-cubePositions = [
-    V3 0.0  0.0  0.0,
-    V3 2.0  5.0 (-15.0),
-    V3 (-1.5) (-2.2) (-2.5),
-    V3 (-3.8) (-2.0) (-12.3),
-    V3 2.4 (-0.4) (-3.5),
-    V3 (-1.7) 3.0 (-7.5),
-    V3 1.3 (-2.0) (-2.5),
-    V3 1.5  2.0 (-2.5),
-    V3 1.5  0.2 (-1.5),
-    V3 (-1.3)  1.0 (-1.5)]
-
 data AppState = AppState { camera :: Camera GLfloat,
                         lastFrame :: Double,
                         lastX :: GLfloat,
@@ -50,13 +37,15 @@ main = do
 
     depthFunc $= Just Less
 
-    shader <- simpleShaderProgram ("data" </> "1_Getting-started" </> "6_Coordinate-systems" </> "coord-systems.vs")
-        ("data" </> "1_Getting-started" </> "6_Coordinate-systems" </> "coord-systems.frag")
-    (vao, vbo) <- createVAO
+    lampShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.vs")
+        ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.frag")
 
-    -- load and create texture
-    t0 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures" </> "container.jpg")
-    t1 <- createTexture ("data" </> "1_Getting-started" </> "4_Textures" </> "Textures-combined" </> "awesomeface3.png")
+    lightningShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lightning.vs")
+        ("data" </> "2_Lightning" </> "1_Colors" </> "lightning.frag")
+
+    cubeVBO <- createCubeVBO
+    containerVAO <- createVAO cubeVBO
+    lightVAO <- createVAO cubeVBO
 
     let initState = AppState {  camera = createCamera (V3 0.0 0.0 3.0) (V3 0.0 1.0 0.0) (-90.0) 0.0,
                                 firstMouse = True,
@@ -76,11 +65,12 @@ main = do
                         handleScrollEvent <$> scrollE,
                         handlePosEvent <$> posE,
                         (doMovement <$> keyB ) <@> (timeB <@ idleE)]
-            reactimate $ drawScene shader t0 t1 vao w <$> (stateB <@ idleE)
+            reactimate $ drawScene lightningShader containerVAO lampShader lightVAO w <$> (stateB <@ idleE)
     runAppLoopEx w networkDescription
 
-    deleteObjectName vao
-    deleteObjectName vbo
+    deleteObjectName lightVAO
+    deleteObjectName containerVAO
+    deleteObjectName cubeVBO
     terminate
 
 handleScrollEvent :: ScrollEvent -> AppState -> AppState
@@ -110,48 +100,47 @@ doMovement keys time state = state { camera = afterMoveRight , lastFrame = time}
         afterMoveLeft = if leftPressed then processKeyboard afterZoomOut LeftM  deltaTime else afterZoomOut
         afterMoveRight = if rightPressed then processKeyboard afterMoveLeft RightM  deltaTime else afterMoveLeft
 
-drawScene :: ShaderProgram -> TextureObject -> TextureObject -> VertexArrayObject -> AppWindow -> AppState -> IO ()
-drawScene shader t0 t1 vao w state = do
+drawScene :: ShaderProgram -> VertexArrayObject -> ShaderProgram -> VertexArrayObject -> AppWindow -> AppState -> IO ()
+drawScene lightningShader contVAO lampShader lightVAO w state = do
     pollEvents
-    clearColor $= Color4 0.2 0.3 0.3 1.0
+    clearColor $= Color4 0.1 0.1 0.1 1.0
     clear [ColorBuffer, DepthBuffer]
 
-    -- Draw our first triangle
-    currentProgram $= Just (program shader)
-
-    activeTexture $= TextureUnit 0
-    textureBinding Texture2D $= Just t0
-    setUniform shader "ourTexture1" (TextureUnit 0)
-
-    activeTexture $= TextureUnit 1
-    textureBinding Texture2D $= Just t1
-    setUniform shader "ourTexture2" (TextureUnit 1)
+    -- draw the container cube
+    currentProgram $= Just (program lightningShader)
+    setUniform lightningShader "objectColor" (V3 (1.0 :: GLfloat) 0.5 0.31)
+    setUniform lightningShader "lightColor" (V3 (1.0 :: GLfloat) 1.0 1.0)
 
     let cam = camera state
         view = viewMatrix cam
         projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
-    setUniform shader "view" view
-    setUniform shader "projection" projection
+    setUniform lightningShader "view" view
+    setUniform lightningShader "projection" projection
 
-    withVAO vao $ mapM_ (drawCube shader) [0..9]
+    let model = identity :: M44 GLfloat
+    setUniform lightningShader "model" model
+    withVAO contVAO $ drawArrays Triangles 0 36
+
+    -- draw the lamp
+    currentProgram $= Just (program lampShader)
+    setUniform lampShader "view" view
+    setUniform lampShader "projection" projection
+
+    let model = mkTransformationMat (0.2 *!! identity) (V3 (1.2 :: GLfloat) 1.0 2.0)
+    setUniform lampShader "model" model
+    withVAO lightVAO $ drawArrays Triangles 0 36
+
     swap w
 
-drawCube :: ShaderProgram -> Int -> IO ()
-drawCube shader i = do
-    let angle = pi / 180.0 * 20.0 * fromIntegral i
-        rot = axisAngle (V3 (1.0 :: GLfloat) 0.3 0.5) (realToFrac angle)
-        model = mkTransformation rot (cubePositions !! i)
-    setUniform shader "model" model
-    drawArrays Triangles 0 36
+createCubeVBO :: IO BufferObject
+createCubeVBO = makeBuffer ArrayBuffer simpleCube
 
-createVAO :: IO (VertexArrayObject, BufferObject)
-createVAO = do
+createVAO :: BufferObject -> IO VertexArrayObject
+createVAO vbo = do
     vao <- genObjectName
     bindVertexArrayObject $= Just vao
-    vbo <- makeBuffer ArrayBuffer cubeWithTexture
-    vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 3 Float (5*4) offset0)
+    bindBuffer ArrayBuffer $= Just vbo
+    vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 3 Float (3*4) offset0)
     vertexAttribArray (AttribLocation 0) $= Enabled
-    vertexAttribPointer (AttribLocation 2) $= (ToFloat, VertexArrayDescriptor 2 Float (5*4) (offsetPtr (3*4)))
-    vertexAttribArray (AttribLocation 2) $= Enabled
     bindVertexArrayObject $= Nothing
-    return (vao, vbo)
+    return vao

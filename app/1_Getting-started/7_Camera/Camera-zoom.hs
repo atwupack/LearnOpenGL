@@ -18,50 +18,8 @@ import Linear.Metric
 import Reactive.Banana.Frameworks
 import Reactive.Banana.Combinators hiding (empty)
 import LOGL.FRP
+import LOGL.Objects
 
-vertices :: [GLfloat]
-vertices = [
-        -0.5, -0.5, -0.5,  0.0, 0.0,
-        0.5, -0.5, -0.5,  1.0, 0.0,
-        0.5,  0.5, -0.5,  1.0, 1.0,
-        0.5,  0.5, -0.5,  1.0, 1.0,
-       -0.5,  0.5, -0.5,  0.0, 1.0,
-       -0.5, -0.5, -0.5,  0.0, 0.0,
-
-       -0.5, -0.5,  0.5,  0.0, 0.0,
-        0.5, -0.5,  0.5,  1.0, 0.0,
-        0.5,  0.5,  0.5,  1.0, 1.0,
-        0.5,  0.5,  0.5,  1.0, 1.0,
-       -0.5,  0.5,  0.5,  0.0, 1.0,
-       -0.5, -0.5,  0.5,  0.0, 0.0,
-
-       -0.5,  0.5,  0.5,  1.0, 0.0,
-       -0.5,  0.5, -0.5,  1.0, 1.0,
-       -0.5, -0.5, -0.5,  0.0, 1.0,
-       -0.5, -0.5, -0.5,  0.0, 1.0,
-       -0.5, -0.5,  0.5,  0.0, 0.0,
-       -0.5,  0.5,  0.5,  1.0, 0.0,
-
-        0.5,  0.5,  0.5,  1.0, 0.0,
-        0.5,  0.5, -0.5,  1.0, 1.0,
-        0.5, -0.5, -0.5,  0.0, 1.0,
-        0.5, -0.5, -0.5,  0.0, 1.0,
-        0.5, -0.5,  0.5,  0.0, 0.0,
-        0.5,  0.5,  0.5,  1.0, 0.0,
-
-       -0.5, -0.5, -0.5,  0.0, 1.0,
-        0.5, -0.5, -0.5,  1.0, 1.0,
-        0.5, -0.5,  0.5,  1.0, 0.0,
-        0.5, -0.5,  0.5,  1.0, 0.0,
-       -0.5, -0.5,  0.5,  0.0, 0.0,
-       -0.5, -0.5, -0.5,  0.0, 1.0,
-
-       -0.5,  0.5, -0.5,  0.0, 1.0,
-        0.5,  0.5, -0.5,  1.0, 1.0,
-        0.5,  0.5,  0.5,  1.0, 0.0,
-        0.5,  0.5,  0.5,  1.0, 0.0,
-       -0.5,  0.5,  0.5,  0.0, 0.0,
-       -0.5,  0.5, -0.5,  0.0, 1.0]
 
 cubePositions :: [V3 GLfloat]
 cubePositions = [
@@ -228,7 +186,7 @@ createVAO :: IO (VertexArrayObject, BufferObject)
 createVAO = do
     vao <- genObjectName
     bindVertexArrayObject $= Just vao
-    vbo <- makeBuffer ArrayBuffer vertices
+    vbo <- makeBuffer ArrayBuffer cubeWithTexture
     vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 3 Float (5*4) offset0)
     vertexAttribArray (AttribLocation 0) $= Enabled
     vertexAttribPointer (AttribLocation 2) $= (ToFloat, VertexArrayDescriptor 2 Float (5*4) (offsetPtr (3*4)))
