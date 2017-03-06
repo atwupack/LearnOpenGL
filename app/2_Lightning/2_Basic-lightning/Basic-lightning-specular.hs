@@ -21,13 +21,6 @@ import Reactive.Banana.Combinators hiding (empty)
 import LOGL.FRP
 import LOGL.Objects
 
-data AppState = AppState { camera :: Camera GLfloat,
-                        lastFrame :: Double,
-                        lastX :: GLfloat,
-                        lastY :: GLfloat,
-                        firstMouse :: Bool}
-    deriving (Show)
-
 main :: IO ()
 main = do
     GLFW.init
@@ -47,25 +40,12 @@ main = do
     containerVAO <- createContVAO cubeVBO
     lightVAO <- createLampVAO cubeVBO
 
-    let initState = AppState {  camera = createCamera (V3 0.0 0.0 3.0) (V3 0.0 1.0 0.0) (-90.0) 0.0,
-                                firstMouse = True,
-                                lastX = 400.0,
-                                lastY = 300.0,
-                                lastFrame = 0.0}
-
     --polygonMode $= (Line, Line)
     let networkDescription :: MomentIO ()
         networkDescription = mdo
-            posE <- cursorPosEvent w
-            scrollE <- scrollEvent w
             idleE <- idleEvent w
-            timeB <- currentTimeB
-            keyB <- keyBehavior w
-            stateB <- accumB initState $ unions [
-                        handleScrollEvent <$> scrollE,
-                        handlePosEvent <$> posE,
-                        (doMovement <$> keyB ) <@> (timeB <@ idleE)]
-            reactimate $ drawScene lightningShader containerVAO lampShader lightVAO w <$> (stateB <@ idleE)
+            camB <- createAppCamera w (V3 0.0 0.0 3.0)
+            reactimate $ drawScene lightningShader containerVAO lampShader lightVAO w <$> (camB <@ idleE)
     runAppLoopEx w networkDescription
 
     deleteObjectName lightVAO
@@ -73,35 +53,8 @@ main = do
     deleteObjectName cubeVBO
     terminate
 
-handleScrollEvent :: ScrollEvent -> AppState -> AppState
-handleScrollEvent (w, xoffset, yoffset) state = state { camera = processMouseScroll (camera state) (realToFrac yoffset) }
-
-handlePosEvent :: CursorPosEvent -> AppState -> AppState
-handlePosEvent (w, xpos, ypos) state = state { lastX = realToFrac xpos, lastY = realToFrac ypos, firstMouse = False,
-                                                camera = processMouseMovement cam xoffset yoffset True }
-    where
-        cam = camera state
-        lx = if firstMouse state then realToFrac xpos else lastX state
-        ly = if firstMouse state then realToFrac ypos else lastY state
-        xoffset =  realToFrac xpos - lx
-        yoffset = ly - realToFrac ypos
-
-doMovement :: Keys -> Double -> AppState -> AppState
-doMovement keys time state = state { camera = afterMoveRight , lastFrame = time}
-    where
-        cam = camera state
-        deltaTime = realToFrac $ time - lastFrame state
-        upPressed = keyPressed Key'W keys
-        downPressed = keyPressed Key'S keys
-        leftPressed = keyPressed Key'A keys
-        rightPressed = keyPressed Key'D keys
-        afterZoomIn = if upPressed then processKeyboard cam ForwardM deltaTime else cam
-        afterZoomOut = if downPressed then processKeyboard afterZoomIn BackwardM  deltaTime else afterZoomIn
-        afterMoveLeft = if leftPressed then processKeyboard afterZoomOut LeftM  deltaTime else afterZoomOut
-        afterMoveRight = if rightPressed then processKeyboard afterMoveLeft RightM  deltaTime else afterMoveLeft
-
-drawScene :: ShaderProgram -> VertexArrayObject -> ShaderProgram -> VertexArrayObject -> AppWindow -> AppState -> IO ()
-drawScene lightningShader contVAO lampShader lightVAO w state = do
+drawScene :: ShaderProgram -> VertexArrayObject -> ShaderProgram -> VertexArrayObject -> AppWindow -> Camera GLfloat -> IO ()
+drawScene lightningShader contVAO lampShader lightVAO w cam = do
     pollEvents
     clearColor $= Color4 0.1 0.1 0.1 1.0
     clear [ColorBuffer, DepthBuffer]
@@ -111,7 +64,6 @@ drawScene lightningShader contVAO lampShader lightVAO w state = do
     let lightX = 1.0 + 2.0 * sin time
         lightY = sin (time / 2.0)
         lightPos = V3 (realToFrac  lightX) (realToFrac lightY) (2.0 :: GLfloat)
-        cam = camera state
 
     -- draw the container cube
     currentProgram $= Just (program lightningShader)

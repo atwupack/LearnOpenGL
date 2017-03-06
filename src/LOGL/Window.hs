@@ -1,7 +1,7 @@
 module LOGL.Window
 (
     createAppWindow, runAppLoop, AppWindow, swap, runAppLoopEx, idleEvent, keyEvent, cursorPosEvent,
-    window, scrollEvent, keyBehavior, Keys, keyPressed
+    window, scrollEvent, keyBehavior, Keys, keyPressed, createAppCamera
 )
 where
 
@@ -11,6 +11,8 @@ import Control.Monad.Loops
 import Reactive.Banana.Frameworks
 import Reactive.Banana hiding (empty)
 import LOGL.FRP
+import Linear.V3
+import LOGL.Camera
 import Control.Applicative hiding (empty)
 import Data.Set hiding (unions)
 
@@ -106,3 +108,58 @@ handleKeyEvent  (w, k, i, _, m) keys = keys
 
 keyPressed :: Key -> Keys -> Bool
 keyPressed = member
+
+-- | functions to create a camera for an application window
+
+data CamState = CamState { camera :: Camera GLfloat,
+                        lastFrame :: Double,
+                        lastX :: GLfloat,
+                        lastY :: GLfloat,
+                        firstMouse :: Bool}
+    deriving (Show)
+
+createAppCamera :: AppWindow -> V3 GLfloat -> MomentIO (Behavior (Camera GLfloat))
+createAppCamera w camPos = do
+    posE <- cursorPosEvent w
+    scrollE <- scrollEvent w
+    idleE <- idleEvent w
+    timeB <- currentTimeB
+    keyB <- keyBehavior w
+    stateB <- accumB initState $ unions [
+                handleScrollEvent <$> scrollE,
+                handlePosEvent <$> posE,
+                (doMovement <$> keyB ) <@> (timeB <@ idleE)]
+    return $ camera <$> stateB
+    where
+        initState = CamState {  camera = createCamera camPos (V3 0.0 1.0 0.0) (-90.0) 0.0,
+                                    firstMouse = True,
+                                    lastX = 400.0,
+                                    lastY = 300.0,
+                                    lastFrame = 0.0}
+
+doMovement :: Keys -> Double -> CamState -> CamState
+doMovement keys time state = state { camera = afterMoveRight , lastFrame = time}
+    where
+        cam = camera state
+        deltaTime = realToFrac $ time - lastFrame state
+        upPressed = keyPressed Key'W keys
+        downPressed = keyPressed Key'S keys
+        leftPressed = keyPressed Key'A keys
+        rightPressed = keyPressed Key'D keys
+        afterZoomIn = if upPressed then processKeyboard cam ForwardM deltaTime else cam
+        afterZoomOut = if downPressed then processKeyboard afterZoomIn BackwardM  deltaTime else afterZoomIn
+        afterMoveLeft = if leftPressed then processKeyboard afterZoomOut LeftM  deltaTime else afterZoomOut
+        afterMoveRight = if rightPressed then processKeyboard afterMoveLeft RightM  deltaTime else afterMoveLeft
+
+handleScrollEvent :: ScrollEvent -> CamState -> CamState
+handleScrollEvent (w, xoffset, yoffset) state = state { camera = processMouseScroll (camera state) (realToFrac yoffset) }
+
+handlePosEvent :: CursorPosEvent -> CamState -> CamState
+handlePosEvent (w, xpos, ypos) state = state { lastX = realToFrac xpos, lastY = realToFrac ypos, firstMouse = False,
+                                                camera = processMouseMovement cam xoffset yoffset True }
+    where
+        cam = camera state
+        lx = if firstMouse state then realToFrac xpos else lastX state
+        ly = if firstMouse state then realToFrac ypos else lastY state
+        xoffset =  realToFrac xpos - lx
+        yoffset = ly - realToFrac ypos
