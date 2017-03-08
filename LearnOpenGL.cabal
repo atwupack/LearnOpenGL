@@ -367,6 +367,8 @@ executable basic-lightning-specular
     default-language:    Haskell2010
 
 executable materials
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/2_Lightning/3_Materials
     main-is:             Materials.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -381,6 +383,37 @@ executable materials
                        , containers
     default-language:    Haskell2010
 
+executable lightning-maps-diffuse
+    if !flag(buildAll)
+        buildable:       False
+    hs-source-dirs:      app/2_Lightning/4_Lightning-maps
+    main-is:             Lightning-maps-diffuse.hs
+    ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+    build-depends:       base
+                       , GLFW-b
+                       , OpenGL
+                       , filepath
+                       , GLUtil
+                       , LearnOpenGL
+                       , linear
+                       , reactive-banana
+                       , containers
+    default-language:    Haskell2010
+
+executable lightning-maps-specular
+    hs-source-dirs:      app/2_Lightning/4_Lightning-maps
+    main-is:             Lightning-maps-specular.hs
+    ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+    build-depends:       base
+                       , GLFW-b
+                       , OpenGL
+                       , filepath
+                       , GLUtil
+                       , LearnOpenGL
+                       , linear
+                       , reactive-banana
+                       , containers
+    default-language:    Haskell2010
 
 source-repository head
   type:     git
