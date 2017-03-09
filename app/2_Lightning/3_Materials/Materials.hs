@@ -33,7 +33,7 @@ main = do
     lampShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.vs")
         ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.frag")
 
-    lightningShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "3_Materials" </> "materials.vs")
+    lightingShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "3_Materials" </> "materials.vs")
         ("data" </> "2_Lightning" </> "3_Materials" </> "materials.frag")
 
     cubeVBO <- createCubeVBO
@@ -45,7 +45,7 @@ main = do
         networkDescription = mdo
             idleE <- idleEvent w
             camB <- createAppCamera w (V3 0.0 0.0 3.0)
-            reactimate $ drawScene lightningShader containerVAO lampShader lightVAO w <$> (camB <@ idleE)
+            reactimate $ drawScene lightingShader containerVAO lampShader lightVAO w <$> (camB <@ idleE)
     runAppLoopEx w networkDescription
 
     deleteObjectName lightVAO
@@ -54,7 +54,7 @@ main = do
     terminate
 
 drawScene :: ShaderProgram -> VertexArrayObject -> ShaderProgram -> VertexArrayObject -> AppWindow -> Camera GLfloat -> IO ()
-drawScene lightningShader contVAO lampShader lightVAO w cam = do
+drawScene lightingShader contVAO lampShader lightVAO w cam = do
     pollEvents
     clearColor $= Color4 0.1 0.1 0.1 1.0
     clear [ColorBuffer, DepthBuffer]
@@ -62,35 +62,35 @@ drawScene lightningShader contVAO lampShader lightVAO w cam = do
     Just time <- getTime
 
     -- draw the container cube
-    currentProgram $= Just (program lightningShader)
+    currentProgram $= Just (program lightingShader)
 
     let lightX = 1.0 + 2.0 * sin time
         lightY = sin (time / 2.0)
         lightPos = V3 (realToFrac  lightX) (realToFrac lightY) (2.0 :: GLfloat)
 
-    setUniform lightningShader "light.position" lightPos
-    setUniform lightningShader "viewPos" (position cam)
+    setUniform lightingShader "light.position" lightPos
+    setUniform lightingShader "viewPos" (position cam)
 
     let (lightColor :: V3 GLfloat) = V3 (sin (realToFrac time * 2.0)) (sin (realToFrac time * 0.7)) (sin (realToFrac time * 1.3))
         diffuseColor = lightColor ^* (0.5 :: GLfloat)
         ambientColor = diffuseColor ^* (0.2 :: GLfloat)
 
-    setUniform lightningShader "light.ambient" ambientColor
-    setUniform lightningShader "light.diffuse" diffuseColor
-    setUniform lightningShader "light.specular" (V3 (1.0 :: GLfloat) 1.0 1.0)
+    setUniform lightingShader "light.ambient" ambientColor
+    setUniform lightingShader "light.diffuse" diffuseColor
+    setUniform lightingShader "light.specular" (V3 (1.0 :: GLfloat) 1.0 1.0)
 
-    setUniform lightningShader "material.ambient" (V3 (1.0 :: GLfloat) 0.5 0.31)
-    setUniform lightningShader "material.diffuse" (V3 (1.0 :: GLfloat) 0.5 0.31)
-    setUniform lightningShader "material.specular" (V3 (0.5 :: GLfloat) 0.5 0.5)
-    setUniform lightningShader "material.shininess" (32.0 :: GLfloat)
+    setUniform lightingShader "material.ambient" (V3 (1.0 :: GLfloat) 0.5 0.31)
+    setUniform lightingShader "material.diffuse" (V3 (1.0 :: GLfloat) 0.5 0.31)
+    setUniform lightingShader "material.specular" (V3 (0.5 :: GLfloat) 0.5 0.5)
+    setUniform lightingShader "material.shininess" (32.0 :: GLfloat)
 
     let view = viewMatrix cam
         projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
-    setUniform lightningShader "view" view
-    setUniform lightningShader "projection" projection
+    setUniform lightingShader "view" view
+    setUniform lightingShader "projection" projection
 
     let model = identity :: M44 GLfloat
-    setUniform lightningShader "model" model
+    setUniform lightingShader "model" model
     withVAO contVAO $ drawArrays Triangles 0 36
 
     -- draw the lamp

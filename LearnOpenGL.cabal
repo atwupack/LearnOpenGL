@@ -332,11 +332,11 @@ executable colors-scene
                        , containers
     default-language:    Haskell2010
 
-executable basic-lightning-diffuse
+executable basic-lighting-diffuse
     if !flag(buildAll)
         buildable:       False
-    hs-source-dirs:      app/2_Lightning/2_Basic-lightning
-    main-is:             Basic-lightning-diffuse.hs
+    hs-source-dirs:      app/2_Lightning/2_Basic-lighting
+    main-is:             Basic-lighting-diffuse.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
     build-depends:       base
                        , GLFW-b
@@ -349,11 +349,11 @@ executable basic-lightning-diffuse
                        , containers
     default-language:    Haskell2010
 
-executable basic-lightning-specular
+executable basic-lighting-specular
     if !flag(buildAll)
         buildable:       False
-    hs-source-dirs:      app/2_Lightning/2_Basic-lightning
-    main-is:             Basic-lightning-specular.hs
+    hs-source-dirs:      app/2_Lightning/2_Basic-lighting
+    main-is:             Basic-lighting-specular.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
     build-depends:       base
                        , GLFW-b
@@ -383,11 +383,11 @@ executable materials
                        , containers
     default-language:    Haskell2010
 
-executable lightning-maps-diffuse
+executable lighting-maps-diffuse
     if !flag(buildAll)
         buildable:       False
-    hs-source-dirs:      app/2_Lightning/4_Lightning-maps
-    main-is:             Lightning-maps-diffuse.hs
+    hs-source-dirs:      app/2_Lightning/4_Lighting-maps
+    main-is:             Lighting-maps-diffuse.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
     build-depends:       base
                        , GLFW-b
@@ -400,9 +400,9 @@ executable lightning-maps-diffuse
                        , containers
     default-language:    Haskell2010
 
-executable lightning-maps-specular
-    hs-source-dirs:      app/2_Lightning/4_Lightning-maps
-    main-is:             Lightning-maps-specular.hs
+executable lighting-maps-specular
+    hs-source-dirs:      app/2_Lightning/4_Lighting-maps
+    main-is:             Lighting-maps-specular.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
     build-depends:       base
                        , GLFW-b

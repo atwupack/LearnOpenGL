@@ -40,8 +40,8 @@ main = do
     lampShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.vs")
         ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.frag")
 
-    lightningShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lightning.vs")
-        ("data" </> "2_Lightning" </> "1_Colors" </> "lightning.frag")
+    lightingShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lighting.vs")
+        ("data" </> "2_Lightning" </> "1_Colors" </> "lighting.frag")
 
     cubeVBO <- createCubeVBO
     containerVAO <- createVAO cubeVBO
@@ -65,7 +65,7 @@ main = do
                         handleScrollEvent <$> scrollE,
                         handlePosEvent <$> posE,
                         (doMovement <$> keyB ) <@> (timeB <@ idleE)]
-            reactimate $ drawScene lightningShader containerVAO lampShader lightVAO w <$> (stateB <@ idleE)
+            reactimate $ drawScene lightingShader containerVAO lampShader lightVAO w <$> (stateB <@ idleE)
     runAppLoopEx w networkDescription
 
     deleteObjectName lightVAO
@@ -101,24 +101,24 @@ doMovement keys time state = state { camera = afterMoveRight , lastFrame = time}
         afterMoveRight = if rightPressed then processKeyboard afterMoveLeft RightM  deltaTime else afterMoveLeft
 
 drawScene :: ShaderProgram -> VertexArrayObject -> ShaderProgram -> VertexArrayObject -> AppWindow -> AppState -> IO ()
-drawScene lightningShader contVAO lampShader lightVAO w state = do
+drawScene lightingShader contVAO lampShader lightVAO w state = do
     pollEvents
     clearColor $= Color4 0.1 0.1 0.1 1.0
     clear [ColorBuffer, DepthBuffer]
 
     -- draw the container cube
-    currentProgram $= Just (program lightningShader)
-    setUniform lightningShader "objectColor" (V3 (1.0 :: GLfloat) 0.5 0.31)
-    setUniform lightningShader "lightColor" (V3 (1.0 :: GLfloat) 1.0 1.0)
+    currentProgram $= Just (program lightingShader)
+    setUniform lightingShader "objectColor" (V3 (1.0 :: GLfloat) 0.5 0.31)
+    setUniform lightingShader "lightColor" (V3 (1.0 :: GLfloat) 1.0 1.0)
 
     let cam = camera state
         view = viewMatrix cam
         projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
-    setUniform lightningShader "view" view
-    setUniform lightningShader "projection" projection
+    setUniform lightingShader "view" view
+    setUniform lightingShader "projection" projection
 
     let model = identity :: M44 GLfloat
-    setUniform lightningShader "model" model
+    setUniform lightingShader "model" model
     withVAO contVAO $ drawArrays Triangles 0 36
 
     -- draw the lamp

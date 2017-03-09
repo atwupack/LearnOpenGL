@@ -33,15 +33,20 @@ main = do
     lampShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.vs")
         ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.frag")
 
-    lightningShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "4_Lightning-maps" </> "diffuse.vs")
-        ("data" </> "2_Lightning" </> "4_Lightning-maps" </> "diffuse.frag")
+    lightingShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "4_Lighting-maps" </> "specular.vs")
+        ("data" </> "2_Lightning" </> "4_Lighting-maps" </> "specular.frag")
 
-    diffuseMap <- createTexture ("data" </> "2_Lightning" </> "4_Lightning-maps" </> "container2.png")
+    diffuseMap <- createTexture ("data" </> "2_Lightning" </> "4_Lighting-maps" </> "container2.png")
+    specularMap <- createTexture ("data" </> "2_Lightning" </> "4_Lighting-maps" </> "container2_specular.png")
 
-    currentProgram $= Just (program lightningShader)
+    currentProgram $= Just (program lightingShader)
     activeTexture $= TextureUnit 0
     textureBinding Texture2D $= Just diffuseMap
-    setUniform lightningShader "material.diffuse" (TextureUnit 0)
+    setUniform lightingShader "material.diffuse" (TextureUnit 0)
+
+    activeTexture $= TextureUnit 1
+    textureBinding Texture2D $= Just specularMap
+    setUniform lightingShader "material.specular" (TextureUnit 1)
 
     cubeVBO <- createCubeVBO
     containerVAO <- createContVAO cubeVBO
@@ -52,7 +57,7 @@ main = do
         networkDescription = mdo
             idleE <- idleEvent w
             camB <- createAppCamera w (V3 0.0 0.0 3.0)
-            reactimate $ drawScene lightningShader containerVAO lampShader lightVAO w <$> (camB <@ idleE)
+            reactimate $ drawScene lightingShader containerVAO lampShader lightVAO w <$> (camB <@ idleE)
     runAppLoopEx w networkDescription
 
     deleteObjectName lightVAO
@@ -61,7 +66,7 @@ main = do
     terminate
 
 drawScene :: ShaderProgram -> VertexArrayObject -> ShaderProgram -> VertexArrayObject -> AppWindow -> Camera GLfloat -> IO ()
-drawScene lightningShader contVAO lampShader lightVAO w cam = do
+drawScene lightingShader contVAO lampShader lightVAO w cam = do
     pollEvents
     clearColor $= Color4 0.1 0.1 0.1 1.0
     clear [ColorBuffer, DepthBuffer]
@@ -69,29 +74,29 @@ drawScene lightningShader contVAO lampShader lightVAO w cam = do
     Just time <- getTime
 
     -- draw the container cube
-    currentProgram $= Just (program lightningShader)
+    currentProgram $= Just (program lightingShader)
 
     let lightX = 1.0 + 2.0 * sin time
         lightY = sin (time / 2.0)
         lightPos = V3 (realToFrac  lightX) (realToFrac lightY) (2.0 :: GLfloat)
 
-    setUniform lightningShader "light.position" lightPos
-    setUniform lightningShader "viewPos" (position cam)
+    setUniform lightingShader "light.position" lightPos
+    setUniform lightingShader "viewPos" (position cam)
 
-    setUniform lightningShader "light.ambient" (V3 (0.2 :: GLfloat) 0.2 0.2)
-    setUniform lightningShader "light.diffuse" (V3 (0.5 :: GLfloat) 0.5 0.5)
-    setUniform lightningShader "light.specular" (V3 (1.0 :: GLfloat) 1.0 1.0)
+    setUniform lightingShader "light.ambient" (V3 (0.2 :: GLfloat) 0.2 0.2)
+    setUniform lightingShader "light.diffuse" (V3 (0.5 :: GLfloat) 0.5 0.5)
+    setUniform lightingShader "light.specular" (V3 (1.0 :: GLfloat) 1.0 1.0)
 
-    setUniform lightningShader "material.specular" (V3 (0.5 :: GLfloat) 0.5 0.5)
-    setUniform lightningShader "material.shininess" (64.0 :: GLfloat)
+    setUniform lightingShader "material.specular" (V3 (0.5 :: GLfloat) 0.5 0.5)
+    setUniform lightingShader "material.shininess" (64.0 :: GLfloat)
 
     let view = viewMatrix cam
         projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
-    setUniform lightningShader "view" view
-    setUniform lightningShader "projection" projection
+    setUniform lightingShader "view" view
+    setUniform lightingShader "projection" projection
 
     let model = identity :: M44 GLfloat
-    setUniform lightningShader "model" model
+    setUniform lightingShader "model" model
     withVAO contVAO $ drawArrays Triangles 0 36
 
     -- draw the lamp
