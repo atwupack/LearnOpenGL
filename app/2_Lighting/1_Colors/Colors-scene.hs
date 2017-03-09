@@ -37,11 +37,11 @@ main = do
 
     depthFunc $= Just Less
 
-    lampShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.vs")
-        ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.frag")
+    lampShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.vs")
+        ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.frag")
 
-    lightingShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lighting.vs")
-        ("data" </> "2_Lightning" </> "1_Colors" </> "lighting.frag")
+    lightingShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "1_Colors" </> "lighting.vs")
+        ("data" </> "2_Lighting" </> "1_Colors" </> "lighting.frag")
 
     cubeVBO <- createCubeVBO
     containerVAO <- createVAO cubeVBO

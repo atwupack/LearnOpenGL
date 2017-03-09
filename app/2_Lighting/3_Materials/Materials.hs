@@ -30,18 +30,11 @@ main = do
 
     depthFunc $= Just Less
 
-    lampShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.vs")
-        ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.frag")
+    lampShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.vs")
+        ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.frag")
 
-    lightingShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "4_Lighting-maps" </> "diffuse.vs")
-        ("data" </> "2_Lightning" </> "4_Lighting-maps" </> "diffuse.frag")
-
-    diffuseMap <- createTexture ("data" </> "2_Lightning" </> "4_Lighting-maps" </> "container2.png")
-
-    currentProgram $= Just (program lightingShader)
-    activeTexture $= TextureUnit 0
-    textureBinding Texture2D $= Just diffuseMap
-    setUniform lightingShader "material.diffuse" (TextureUnit 0)
+    lightingShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "3_Materials" </> "materials.vs")
+        ("data" </> "2_Lighting" </> "3_Materials" </> "materials.frag")
 
     cubeVBO <- createCubeVBO
     containerVAO <- createContVAO cubeVBO
@@ -78,12 +71,18 @@ drawScene lightingShader contVAO lampShader lightVAO w cam = do
     setUniform lightingShader "light.position" lightPos
     setUniform lightingShader "viewPos" (position cam)
 
-    setUniform lightingShader "light.ambient" (V3 (0.2 :: GLfloat) 0.2 0.2)
-    setUniform lightingShader "light.diffuse" (V3 (0.5 :: GLfloat) 0.5 0.5)
+    let (lightColor :: V3 GLfloat) = V3 (sin (realToFrac time * 2.0)) (sin (realToFrac time * 0.7)) (sin (realToFrac time * 1.3))
+        diffuseColor = lightColor ^* (0.5 :: GLfloat)
+        ambientColor = diffuseColor ^* (0.2 :: GLfloat)
+
+    setUniform lightingShader "light.ambient" ambientColor
+    setUniform lightingShader "light.diffuse" diffuseColor
     setUniform lightingShader "light.specular" (V3 (1.0 :: GLfloat) 1.0 1.0)
 
+    setUniform lightingShader "material.ambient" (V3 (1.0 :: GLfloat) 0.5 0.31)
+    setUniform lightingShader "material.diffuse" (V3 (1.0 :: GLfloat) 0.5 0.31)
     setUniform lightingShader "material.specular" (V3 (0.5 :: GLfloat) 0.5 0.5)
-    setUniform lightingShader "material.shininess" (64.0 :: GLfloat)
+    setUniform lightingShader "material.shininess" (32.0 :: GLfloat)
 
     let view = viewMatrix cam
         projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
@@ -106,19 +105,17 @@ drawScene lightingShader contVAO lampShader lightVAO w cam = do
     swap w
 
 createCubeVBO :: IO BufferObject
-createCubeVBO = makeBuffer ArrayBuffer cubeWithNormalsAndTexture
+createCubeVBO = makeBuffer ArrayBuffer cubeWithNormals
 
 createContVAO :: BufferObject -> IO VertexArrayObject
 createContVAO vbo = do
     vao <- genObjectName
     bindVertexArrayObject $= Just vao
     bindBuffer ArrayBuffer $= Just vbo
-    vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 3 Float (8*4) offset0)
+    vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 3 Float (6*4) offset0)
     vertexAttribArray (AttribLocation 0) $= Enabled
-    vertexAttribPointer (AttribLocation 1) $= (ToFloat, VertexArrayDescriptor 3 Float (8*4) (offsetPtr (3*4)))
+    vertexAttribPointer (AttribLocation 1) $= (ToFloat, VertexArrayDescriptor 3 Float (6*4) (offsetPtr (3*4)))
     vertexAttribArray (AttribLocation 1) $= Enabled
-    vertexAttribPointer (AttribLocation 2) $= (ToFloat, VertexArrayDescriptor 3 Float (8*4) (offsetPtr (6*4)))
-    vertexAttribArray (AttribLocation 2) $= Enabled
     bindVertexArrayObject $= Nothing
     return vao
 
@@ -127,7 +124,7 @@ createLampVAO vbo = do
     vao <- genObjectName
     bindVertexArrayObject $= Just vao
     bindBuffer ArrayBuffer $= Just vbo
-    vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 3 Float (8*4) offset0)
+    vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 3 Float (6*4) offset0)
     vertexAttribArray (AttribLocation 0) $= Enabled
     bindVertexArrayObject $= Nothing
     return vao

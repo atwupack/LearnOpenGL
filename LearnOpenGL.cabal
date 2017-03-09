@@ -318,7 +318,7 @@ executable camera-with-class
 executable colors-scene
     if !flag(buildAll)
         buildable:       False
-    hs-source-dirs:      app/2_Lightning/1_Colors
+    hs-source-dirs:      app/2_Lighting/1_Colors
     main-is:             Colors-scene.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
     build-depends:       base
@@ -335,7 +335,7 @@ executable colors-scene
 executable basic-lighting-diffuse
     if !flag(buildAll)
         buildable:       False
-    hs-source-dirs:      app/2_Lightning/2_Basic-lighting
+    hs-source-dirs:      app/2_Lighting/2_Basic-lighting
     main-is:             Basic-lighting-diffuse.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
     build-depends:       base
@@ -352,7 +352,7 @@ executable basic-lighting-diffuse
 executable basic-lighting-specular
     if !flag(buildAll)
         buildable:       False
-    hs-source-dirs:      app/2_Lightning/2_Basic-lighting
+    hs-source-dirs:      app/2_Lighting/2_Basic-lighting
     main-is:             Basic-lighting-specular.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
     build-depends:       base
@@ -369,7 +369,7 @@ executable basic-lighting-specular
 executable materials
     if !flag(buildAll)
         buildable:       False
-    hs-source-dirs:      app/2_Lightning/3_Materials
+    hs-source-dirs:      app/2_Lighting/3_Materials
     main-is:             Materials.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
     build-depends:       base
@@ -386,7 +386,7 @@ executable materials
 executable lighting-maps-diffuse
     if !flag(buildAll)
         buildable:       False
-    hs-source-dirs:      app/2_Lightning/4_Lighting-maps
+    hs-source-dirs:      app/2_Lighting/4_Lighting-maps
     main-is:             Lighting-maps-diffuse.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
     build-depends:       base
@@ -401,7 +401,7 @@ executable lighting-maps-diffuse
     default-language:    Haskell2010
 
 executable lighting-maps-specular
-    hs-source-dirs:      app/2_Lightning/4_Lighting-maps
+    hs-source-dirs:      app/2_Lighting/4_Lighting-maps
     main-is:             Lighting-maps-specular.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
     build-depends:       base

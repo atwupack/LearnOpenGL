@@ -1,4 +1,4 @@
-{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE RecursiveDo, ScopedTypeVariables #-}
 module Main where
 
 import LOGL.Window
@@ -30,11 +30,23 @@ main = do
 
     depthFunc $= Just Less
 
-    lampShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.vs")
-        ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.frag")
+    lampShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.vs")
+        ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.frag")
 
-    lightingShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "2_Basic-lighting" </> "specular.vs")
-        ("data" </> "2_Lightning" </> "2_Basic-lighting" </> "specular.frag")
+    lightingShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "specular.vs")
+        ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "specular.frag")
+
+    diffuseMap <- createTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
+    specularMap <- createTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2_specular.png")
+
+    currentProgram $= Just (program lightingShader)
+    activeTexture $= TextureUnit 0
+    textureBinding Texture2D $= Just diffuseMap
+    setUniform lightingShader "material.diffuse" (TextureUnit 0)
+
+    activeTexture $= TextureUnit 1
+    textureBinding Texture2D $= Just specularMap
+    setUniform lightingShader "material.specular" (TextureUnit 1)
 
     cubeVBO <- createCubeVBO
     containerVAO <- createContVAO cubeVBO
@@ -61,16 +73,22 @@ drawScene lightingShader contVAO lampShader lightVAO w cam = do
 
     Just time <- getTime
 
+    -- draw the container cube
+    currentProgram $= Just (program lightingShader)
+
     let lightX = 1.0 + 2.0 * sin time
         lightY = sin (time / 2.0)
         lightPos = V3 (realToFrac  lightX) (realToFrac lightY) (2.0 :: GLfloat)
 
-    -- draw the container cube
-    currentProgram $= Just (program lightingShader)
-    setUniform lightingShader "objectColor" (V3 (1.0 :: GLfloat) 0.5 0.31)
-    setUniform lightingShader "lightColor" (V3 (1.0 :: GLfloat) 1.0 1.0)
-    setUniform lightingShader "lightPos" lightPos
+    setUniform lightingShader "light.position" lightPos
     setUniform lightingShader "viewPos" (position cam)
+
+    setUniform lightingShader "light.ambient" (V3 (0.2 :: GLfloat) 0.2 0.2)
+    setUniform lightingShader "light.diffuse" (V3 (0.5 :: GLfloat) 0.5 0.5)
+    setUniform lightingShader "light.specular" (V3 (1.0 :: GLfloat) 1.0 1.0)
+
+    setUniform lightingShader "material.specular" (V3 (0.5 :: GLfloat) 0.5 0.5)
+    setUniform lightingShader "material.shininess" (64.0 :: GLfloat)
 
     let view = viewMatrix cam
         projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
@@ -93,17 +111,19 @@ drawScene lightingShader contVAO lampShader lightVAO w cam = do
     swap w
 
 createCubeVBO :: IO BufferObject
-createCubeVBO = makeBuffer ArrayBuffer cubeWithNormals
+createCubeVBO = makeBuffer ArrayBuffer cubeWithNormalsAndTexture
 
 createContVAO :: BufferObject -> IO VertexArrayObject
 createContVAO vbo = do
     vao <- genObjectName
     bindVertexArrayObject $= Just vao
     bindBuffer ArrayBuffer $= Just vbo
-    vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 3 Float (6*4) offset0)
+    vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 3 Float (8*4) offset0)
     vertexAttribArray (AttribLocation 0) $= Enabled
-    vertexAttribPointer (AttribLocation 1) $= (ToFloat, VertexArrayDescriptor 3 Float (6*4) (offsetPtr (3*4)))
+    vertexAttribPointer (AttribLocation 1) $= (ToFloat, VertexArrayDescriptor 3 Float (8*4) (offsetPtr (3*4)))
     vertexAttribArray (AttribLocation 1) $= Enabled
+    vertexAttribPointer (AttribLocation 2) $= (ToFloat, VertexArrayDescriptor 3 Float (8*4) (offsetPtr (6*4)))
+    vertexAttribArray (AttribLocation 2) $= Enabled
     bindVertexArrayObject $= Nothing
     return vao
 
@@ -112,7 +132,7 @@ createLampVAO vbo = do
     vao <- genObjectName
     bindVertexArrayObject $= Just vao
     bindBuffer ArrayBuffer $= Just vbo
-    vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 3 Float (6*4) offset0)
+    vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 3 Float (8*4) offset0)
     vertexAttribArray (AttribLocation 0) $= Enabled
     bindVertexArrayObject $= Nothing
     return vao

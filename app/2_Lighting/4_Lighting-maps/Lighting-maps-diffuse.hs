@@ -30,23 +30,18 @@ main = do
 
     depthFunc $= Just Less
 
-    lampShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.vs")
-        ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.frag")
+    lampShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.vs")
+        ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.frag")
 
-    lightingShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "4_Lighting-maps" </> "specular.vs")
-        ("data" </> "2_Lightning" </> "4_Lighting-maps" </> "specular.frag")
+    lightingShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "diffuse.vs")
+        ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "diffuse.frag")
 
-    diffuseMap <- createTexture ("data" </> "2_Lightning" </> "4_Lighting-maps" </> "container2.png")
-    specularMap <- createTexture ("data" </> "2_Lightning" </> "4_Lighting-maps" </> "container2_specular.png")
+    diffuseMap <- createTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
 
     currentProgram $= Just (program lightingShader)
     activeTexture $= TextureUnit 0
     textureBinding Texture2D $= Just diffuseMap
     setUniform lightingShader "material.diffuse" (TextureUnit 0)
-
-    activeTexture $= TextureUnit 1
-    textureBinding Texture2D $= Just specularMap
-    setUniform lightingShader "material.specular" (TextureUnit 1)
 
     cubeVBO <- createCubeVBO
     containerVAO <- createContVAO cubeVBO

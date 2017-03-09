@@ -1,4 +1,4 @@
-{-# LANGUAGE RecursiveDo, ScopedTypeVariables #-}
+{-# LANGUAGE RecursiveDo #-}
 module Main where
 
 import LOGL.Window
@@ -30,11 +30,11 @@ main = do
 
     depthFunc $= Just Less
 
-    lampShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.vs")
-        ("data" </> "2_Lightning" </> "1_Colors" </> "lamp.frag")
+    lampShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.vs")
+        ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.frag")
 
-    lightingShader <- simpleShaderProgram ("data" </> "2_Lightning" </> "3_Materials" </> "materials.vs")
-        ("data" </> "2_Lightning" </> "3_Materials" </> "materials.frag")
+    lightingShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "2_Basic-lighting" </> "specular.vs")
+        ("data" </> "2_Lighting" </> "2_Basic-lighting" </> "specular.frag")
 
     cubeVBO <- createCubeVBO
     containerVAO <- createContVAO cubeVBO
@@ -61,28 +61,16 @@ drawScene lightingShader contVAO lampShader lightVAO w cam = do
 
     Just time <- getTime
 
-    -- draw the container cube
-    currentProgram $= Just (program lightingShader)
-
     let lightX = 1.0 + 2.0 * sin time
         lightY = sin (time / 2.0)
         lightPos = V3 (realToFrac  lightX) (realToFrac lightY) (2.0 :: GLfloat)
 
-    setUniform lightingShader "light.position" lightPos
+    -- draw the container cube
+    currentProgram $= Just (program lightingShader)
+    setUniform lightingShader "objectColor" (V3 (1.0 :: GLfloat) 0.5 0.31)
+    setUniform lightingShader "lightColor" (V3 (1.0 :: GLfloat) 1.0 1.0)
+    setUniform lightingShader "lightPos" lightPos
     setUniform lightingShader "viewPos" (position cam)
-
-    let (lightColor :: V3 GLfloat) = V3 (sin (realToFrac time * 2.0)) (sin (realToFrac time * 0.7)) (sin (realToFrac time * 1.3))
-        diffuseColor = lightColor ^* (0.5 :: GLfloat)
-        ambientColor = diffuseColor ^* (0.2 :: GLfloat)
-
-    setUniform lightingShader "light.ambient" ambientColor
-    setUniform lightingShader "light.diffuse" diffuseColor
-    setUniform lightingShader "light.specular" (V3 (1.0 :: GLfloat) 1.0 1.0)
-
-    setUniform lightingShader "material.ambient" (V3 (1.0 :: GLfloat) 0.5 0.31)
-    setUniform lightingShader "material.diffuse" (V3 (1.0 :: GLfloat) 0.5 0.31)
-    setUniform lightingShader "material.specular" (V3 (0.5 :: GLfloat) 0.5 0.5)
-    setUniform lightingShader "material.shininess" (32.0 :: GLfloat)
 
     let view = viewMatrix cam
         projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
