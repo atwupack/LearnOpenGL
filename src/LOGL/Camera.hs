@@ -1,7 +1,7 @@
 module LOGL.Camera
 (
     Camera, CameraMovement(..), processKeyboard, processMouseScroll, processMouseMovement,
-    viewMatrix, createCamera, zoom, radians, position
+    viewMatrix, createCamera, zoom, radians, position, front
 )
 where
 

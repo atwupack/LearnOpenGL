@@ -435,8 +435,42 @@ executable light-casters-directional
     default-language:    Haskell2010
 
 executable light-casters-point
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/2_Lighting/5_Light-casters
     main-is:             Light-casters-point.hs
+    ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+    build-depends:       base
+                       , GLFW-b
+                       , OpenGL
+                       , filepath
+                       , GLUtil
+                       , LearnOpenGL
+                       , linear
+                       , reactive-banana
+                       , containers
+    default-language:    Haskell2010
+
+executable light-casters-spotlight
+    if !flag(buildAll)
+        buildable:       False
+    hs-source-dirs:      app/2_Lighting/5_Light-casters
+    main-is:             Light-casters-spotlight.hs
+    ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+    build-depends:       base
+                       , GLFW-b
+                       , OpenGL
+                       , filepath
+                       , GLUtil
+                       , LearnOpenGL
+                       , linear
+                       , reactive-banana
+                       , containers
+    default-language:    Haskell2010
+
+executable light-casters-spotlight-soft
+    hs-source-dirs:      app/2_Lighting/5_Light-casters
+    main-is:             Light-casters-spotlight-soft.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
     build-depends:       base
                        , GLFW-b
