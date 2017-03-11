@@ -486,6 +486,8 @@ executable light-casters-spotlight-soft
     default-language:    Haskell2010
 
 executable multiple-lights
+    if !flag(buildAll)
+        buildable:       False
     hs-source-dirs:      app/2_Lighting/6_Multiple-lights
     main-is:             Multiple-lights.hs
     ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -500,6 +502,20 @@ executable multiple-lights
                        , containers
     default-language:    Haskell2010
 
+executable multiple-lights-with-spot
+    hs-source-dirs:      app/2_Lighting/6_Multiple-lights
+    main-is:             Multiple-lights-with-spot.hs
+    ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+    build-depends:       base
+                       , GLFW-b
+                       , OpenGL
+                       , filepath
+                       , GLUtil
+                       , LearnOpenGL
+                       , linear
+                       , reactive-banana
+                       , containers
+    default-language:    Haskell2010
 
 source-repository head
   type:     git
