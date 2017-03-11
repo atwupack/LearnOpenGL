@@ -141,7 +141,7 @@ createContVAO vbo = do
     vertexAttribArray (AttribLocation 0) $= Enabled
     vertexAttribPointer (AttribLocation 1) $= (ToFloat, VertexArrayDescriptor 3 Float (8*4) (offsetPtr (3*4)))
     vertexAttribArray (AttribLocation 1) $= Enabled
-    vertexAttribPointer (AttribLocation 2) $= (ToFloat, VertexArrayDescriptor 3 Float (8*4) (offsetPtr (6*4)))
+    vertexAttribPointer (AttribLocation 2) $= (ToFloat, VertexArrayDescriptor 2 Float (8*4) (offsetPtr (6*4)))
     vertexAttribArray (AttribLocation 2) $= Enabled
     bindVertexArrayObject $= Nothing
     return vao
