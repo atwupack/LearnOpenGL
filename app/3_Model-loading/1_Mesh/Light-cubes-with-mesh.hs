@@ -132,7 +132,7 @@ drawLight mesh shader i = do
 setSpotLight :: ShaderProgram -> IO ()
 setSpotLight shader = do
     setUniform shader "spotLight.ambient" (V3 (0.0 :: GLfloat) 0.0 0.0)
-    setUniform shader "spotLight.diffuse" (V3 (1.0 :: GLfloat) 1.0 1.0)
+    setUniform shader "spotLight.diffuse" (V3 (0.5 :: GLfloat) 0.5 0.5)
     setUniform shader "spotLight.specular" (V3 (1.0 :: GLfloat) 1.0 1.0)
     setUniform shader "spotLight.constant" (1.0 :: GLfloat)
     setUniform shader "spotLight.linear" (0.09 :: GLfloat)
@@ -144,7 +144,7 @@ setPointLight :: ShaderProgram -> Int -> IO ()
 setPointLight shader i = do
     setUniform shader ("pointLights[" ++ show i ++ "].position") (pointLightPositions !! i)
     setUniform shader ("pointLights[" ++ show i ++ "].ambient") (V3 (0.05 :: GLfloat) 0.05 0.05)
-    setUniform shader ("pointLights[" ++ show i ++ "].diffuse") (V3 (0.8 :: GLfloat) 0.8 0.8)
+    setUniform shader ("pointLights[" ++ show i ++ "].diffuse") (V3 (0.5 :: GLfloat) 0.5 0.5)
     setUniform shader ("pointLights[" ++ show i ++ "].specular") (V3 (1.0 :: GLfloat) 1.0 1.0)
     setUniform shader ("pointLights[" ++ show i ++ "].constant") (1.0 :: GLfloat)
     setUniform shader ("pointLights[" ++ show i ++ "].linear") (0.09 :: GLfloat)
