@@ -1,6 +1,6 @@
 module LOGL.Mesh
 (
-
+    Mesh, createMesh, drawMesh, Vertex(..), deleteMesh, Texture(..), TextureType(..)
 )
 where
 
@@ -38,15 +38,30 @@ data TextureType = DiffuseMap | SpecularMap | NormalMap
 data Mesh = Mesh { vertices :: [Vertex], indices :: [GLuint], textures :: [Texture], vao :: VertexArrayObject, vbo :: BufferObject, ebo :: BufferObject}
     deriving (Eq, Show)
 
-draw :: Mesh -> ShaderProgram -> IO ()
-draw mesh shader = do
-    mapM_ (setTexture shader mesh)  [0..(fromIntegral (length (textures mesh)))]
-    withVAO (vao mesh) $ drawElements Triangles (fromIntegral (length (indices mesh))) UnsignedInt nullPtr
+deleteMesh :: Mesh -> IO ()
+deleteMesh mesh = do
+    deleteObjectName $ vao mesh
+    deleteObjectName $ ebo mesh
+    deleteObjectName $ vbo mesh
 
-setTexture :: ShaderProgram -> Mesh -> GLuint -> IO ()
-setTexture shader mesh tu = do
-    let text = (textures mesh) !! fromIntegral tu
-        name = "material.texture_" ++ (tname text)
+drawMesh :: Mesh -> ShaderProgram -> IO ()
+drawMesh mesh shader = do
+    setTextures shader (textures mesh)
+    withVAO (vao mesh) $ drawElements Triangles idxCount UnsignedInt nullPtr
+        where
+            idxCount = fromIntegral (length (indices mesh))
+
+setTextures :: ShaderProgram -> [Texture] -> IO ()
+setTextures shader [] = return ()
+setTextures shader texts = mapM_ (setTexture shader texts)  [0..texCount - 1]
+    where
+        texCount = fromIntegral (length texts)
+
+
+setTexture :: ShaderProgram -> [Texture] -> GLuint -> IO ()
+setTexture shader texts tu = do
+    let text = texts !! fromIntegral tu
+        name = "mat." ++ tname text
     activeTexture $= TextureUnit tu
     textureBinding Texture2D $= Just (tobj text)
     setUniform shader name (TextureUnit tu)
@@ -60,6 +75,7 @@ createMesh verts inds texts = do
 
     bindVertexArrayObject $= Just newVao
     bindBuffer ArrayBuffer $= Just newVbo
+    bindBuffer ElementArrayBuffer $= Just newEbo
     vertexAttribPointer (AttribLocation 0) $= (ToFloat, VertexArrayDescriptor 3 Float (8*4) offset0)
     vertexAttribArray (AttribLocation 0) $= Enabled
     vertexAttribPointer (AttribLocation 1) $= (ToFloat, VertexArrayDescriptor 3 Float (8*4) (offsetPtr (3*4)))
