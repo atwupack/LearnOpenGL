@@ -7,7 +7,7 @@ import LOGL.Camera as Cam
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL hiding (normalize, position, Texture)
-import Graphics.GLUtil
+import Graphics.GLUtil hiding (loadTexture)
 import System.FilePath
 import Graphics.Rendering.OpenGL.GL.Shaders.ProgramObjects
 import Linear.Matrix
@@ -57,8 +57,11 @@ main = do
     lightingShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.vs")
         ("data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.frag")
 
-    diffuseMap <- createTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
-    specularMap <- createTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2_specular.png")
+    tm <- loadTexture newTextureManager ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
+        >>= ( \x -> loadTexture x ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2_specular.png"))
+
+    --diffuseMap <- createTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
+    --specularMap <- createTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2_specular.png")
 
     currentProgram $= Just (program lightingShader)
 
@@ -74,8 +77,8 @@ main = do
     setSpotLight lightingShader
 
     contMesh <- cubeMesh [
-        Texture diffuseMap DiffuseMap "diffuse",
-        Texture specularMap SpecularMap "specular"]
+        Texture (getTexture tm "container2") DiffuseMap "diffuse",
+        Texture (getTexture tm "container2_specular") SpecularMap "specular"]
     lightMesh <- cubeMesh []
 
     --polygonMode $= (Line, Line)
