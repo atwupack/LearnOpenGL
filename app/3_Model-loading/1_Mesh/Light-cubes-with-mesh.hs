@@ -3,6 +3,7 @@ module Main where
 
 import LOGL.Window
 import LOGL.Texture
+import LOGL.Resource
 import LOGL.Camera as Cam
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
@@ -57,11 +58,9 @@ main = do
     lightingShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.vs")
         ("data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.frag")
 
-    tm <- loadTexture newTextureManager ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
-        >>= ( \x -> loadTexture x ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2_specular.png"))
-
-    --diffuseMap <- createTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
-    --specularMap <- createTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2_specular.png")
+    tm <- updateManager newManager $ do
+        loadResource ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
+        loadResource ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2_specular.png")
 
     currentProgram $= Just (program lightingShader)
 
@@ -77,8 +76,8 @@ main = do
     setSpotLight lightingShader
 
     contMesh <- cubeMesh [
-        Texture (getTexture tm "container2") DiffuseMap "diffuse",
-        Texture (getTexture tm "container2_specular") SpecularMap "specular"]
+        Texture (getResource tm "container2") DiffuseMap "diffuse",
+        Texture (getResource tm "container2_specular") SpecularMap "specular"]
     lightMesh <- cubeMesh []
 
     --polygonMode $= (Line, Line)
@@ -91,6 +90,7 @@ main = do
 
     deleteMesh lightMesh
     deleteMesh contMesh
+    updateManager tm deleteAll
 
     terminate
 

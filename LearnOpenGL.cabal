@@ -19,7 +19,14 @@ flag buildAll
 
 library
     hs-source-dirs:      src
-    exposed-modules:     LOGL.Window, LOGL.Texture, LOGL.FRP, LOGL.Camera, LOGL.Objects, LOGL.Mesh, LOGL.Model
+    exposed-modules:     LOGL.Window
+                        , LOGL.Texture
+                        , LOGL.FRP
+                        , LOGL.Camera
+                        , LOGL.Objects
+                        , LOGL.Mesh
+                        , LOGL.Model
+                        , LOGL.Resource
     build-depends:       base >= 4.7 && < 5
                         , OpenGL
                         , bytestring
