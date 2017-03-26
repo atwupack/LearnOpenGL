@@ -27,6 +27,7 @@ library
                         , LOGL.Mesh
                         , LOGL.Model
                         , LOGL.Resource
+                        , LOGL.Shader
     build-depends:       base >= 4.7 && < 5
                         , OpenGL
                         , bytestring
@@ -541,6 +542,7 @@ executable light-cubes-with-mesh
                        , linear
                        , reactive-banana
                        , containers
+                       , transformers
     default-language:    Haskell2010
 
 executable model-diffuse

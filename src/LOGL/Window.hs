@@ -1,7 +1,8 @@
 module LOGL.Window
 (
-    createAppWindow, runAppLoop, AppWindow, swap, runAppLoopEx, idleEvent, keyEvent, cursorPosEvent,
-    window, scrollEvent, keyBehavior, Keys, keyPressed, createAppCamera
+    createAppWindow, runAppLoop, AppWindow, swap, runAppLoopEx, runAppLoopEx2, idleEvent, keyEvent, cursorPosEvent,
+    window, scrollEvent, keyBehavior, Keys, keyPressed, createAppCamera,
+    AppContext(..), reactWithContext
 )
 where
 
@@ -13,8 +14,15 @@ import Reactive.Banana hiding (empty)
 import LOGL.FRP
 import Linear.V3
 import LOGL.Camera
+import LOGL.Resource
+import LOGL.Shader
+import LOGL.Texture
 import Control.Applicative hiding (empty)
-import Data.Set hiding (unions)
+import Data.Set as Set hiding (unions)
+import Graphics.GLUtil
+import Control.Monad.Trans.State as St
+import Control.Monad.IO.Class
+
 
 data AppWindow = AppWindow {    title :: String,
                                 window :: Window,
@@ -23,7 +31,9 @@ data AppWindow = AppWindow {    title :: String,
                                 cursorPosEvent :: MomentIO (Event CursorPosEvent),
                                 scrollEvent :: MomentIO (Event ScrollEvent),
                                 idleEvent :: MomentIO (Event ()),
-                                fireIdle :: Handler ()}
+                                fireIdle :: Handler (),
+                                ctxEvent :: MomentIO (Event AppContext),
+                                fireCtx :: Handler AppContext}
 
 createAppWindow :: Int -> Int -> String ->IO AppWindow
 createAppWindow width height t = do
@@ -44,18 +54,21 @@ createAppWindow width height t = do
             winSizeE <- fromAddHandler <$> registerWindowSize w
             cursorPosE <- fromAddHandler <$> registerCursorPos w
             scrollE <- fromAddHandler <$> registerScroll w
-            (addHandler, fire) <- newAddHandler
+            (idleAddHandler, fIdle) <- newAddHandler
+            (ctxAddHandler, fCtx) <- newAddHandler
             return AppWindow {  title = t,
                                 window = w,
                                 keyEvent = keyE,
                                 winSizeEvent = winSizeE,
                                 cursorPosEvent = cursorPosE,
                                 scrollEvent = scrollE,
-                                idleEvent = fromAddHandler addHandler,
-                                fireIdle = fire}
+                                idleEvent = fromAddHandler idleAddHandler,
+                                fireIdle = fIdle,
+                                ctxEvent = fromAddHandler ctxAddHandler,
+                                fireCtx = fCtx}
 
-runAppLoopEx :: AppWindow -> MomentIO () -> IO ()
-runAppLoopEx win net = do
+runAppLoopEx2 :: AppWindow -> AppContext -> MomentIO () -> IO ()
+runAppLoopEx2 win context net = do
     let networkDesc :: MomentIO ()
         networkDesc = do
             -- close windw on ESC
@@ -68,6 +81,7 @@ runAppLoopEx win net = do
             net
     network <- compile networkDesc
     actuate network
+    fireCtx win context
     whileM_ (not <$> windowShouldClose (window win)) $ do
         Just startTime <- getTime
         fireIdle win ()
@@ -75,6 +89,9 @@ runAppLoopEx win net = do
         let fps = 1.0 / (endTime - startTime)
         setWindowTitle (window win) (title win ++ "(" ++ show fps ++ " fps)")
     pause network
+
+runAppLoopEx :: AppWindow -> MomentIO () -> IO ()
+runAppLoopEx win = runAppLoopEx2 win initContext
 
 runAppLoop :: AppWindow -> IO () -> IO ()
 runAppLoop win loop = do
@@ -102,12 +119,30 @@ keyBehavior win = do
     accumB empty $ unions [handleKeyEvent <$> keyE]
 
 handleKeyEvent ::  KeyEvent -> Keys -> Keys
-handleKeyEvent  (w, k, i, KeyState'Pressed, m) keys = insert k keys
-handleKeyEvent  (w, k, i, KeyState'Released, m) keys = delete k keys
+handleKeyEvent  (w, k, i, KeyState'Pressed, m) keys = Set.insert k keys
+handleKeyEvent  (w, k, i, KeyState'Released, m) keys = Set.delete k keys
 handleKeyEvent  (w, k, i, _, m) keys = keys
 
 keyPressed :: Key -> Keys -> Bool
 keyPressed = member
+
+-- | functions for the application context
+data AppContext = AppContext {  shaderMgr :: Manager ShaderProgram,
+                                textureMgr :: Manager TextureObject}
+
+initContext = AppContext {  shaderMgr = newManager,
+                            textureMgr = newManager}
+
+reactWithContext :: AppWindow -> Event (StateT AppContext IO ()) -> MomentIO ()
+reactWithContext win event = do
+    ctxE <- ctxEvent win
+    contextB <- stepper initContext ctxE
+    reactimate $ (doInContext win <$> contextB) <@> event
+
+doInContext :: AppWindow -> AppContext -> StateT AppContext IO () -> IO ()
+doInContext win ctx action = do
+    newCtx <- execStateT action ctx
+    fireCtx win newCtx
 
 -- | functions to create a camera for an application window
 

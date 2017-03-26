@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 module LOGL.Resource
 (
     Resource(..), Manager, newManager, loadResource, deleteResource, updateManager, getResource, deleteAll
@@ -5,7 +6,6 @@ module LOGL.Resource
 where
 
 import qualified Data.Map as Map
-import System.FilePath
 import Control.Monad.Trans.State as St
 import Control.Monad.IO.Class
 import Data.Maybe
@@ -23,7 +23,7 @@ getResource mgr name = fromMaybe (error "Invalid resource") md
     where
         md = Map.lookup name (cache mgr)
 
-loadResource :: (MonadIO m, Resource r) => FilePath -> StateT (Manager r) m ()
+loadResource :: (MonadIO m, Resource r) => LoadParam r -> StateT (Manager r) m ()
 loadResource file = do
     tm <- St.get
     (name, res) <- liftIO $ load file
@@ -46,5 +46,6 @@ deleteAll = do
     St.put newManager
 
 class Resource a where
-    load :: FilePath -> IO (String, a)
+    type LoadParam a :: *
+    load :: LoadParam a -> IO (String, a)
     delete :: a -> IO ()

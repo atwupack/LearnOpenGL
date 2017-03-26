@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 module LOGL.Texture
 (
     createTexture
@@ -10,6 +11,7 @@ import System.FilePath
 import LOGL.Resource
 
 instance Resource TextureObject where
+    type LoadParam TextureObject = FilePath
     load file = do
         result <- readTexture file
         case result of

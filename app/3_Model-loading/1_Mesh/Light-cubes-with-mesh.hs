@@ -22,6 +22,8 @@ import Reactive.Banana.Combinators hiding (empty)
 import LOGL.FRP
 import LOGL.Objects
 import LOGL.Mesh
+import LOGL.Shader
+import Control.Monad.Trans.State as St
 
 pointLightPositions :: [V3 GLfloat]
 pointLightPositions = [
@@ -52,15 +54,21 @@ main = do
 
     depthFunc $= Just Less
 
-    lampShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.vs")
-        ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.frag")
-
-    lightingShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.vs")
-        ("data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.frag")
+    pm <- updateManager newManager $ do
+        loadResource ("lampShader",
+            "data" </> "2_Lighting" </> "1_Colors" </> "lamp.vs",
+            "data" </> "2_Lighting" </> "1_Colors" </> "lamp.frag")
+        loadResource ("lightingShader",
+            "data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.vs",
+            "data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.frag")
 
     tm <- updateManager newManager $ do
         loadResource ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
         loadResource ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2_specular.png")
+
+    let appContext = AppContext { shaderMgr = pm, textureMgr = tm }
+
+    let lightingShader = getResource pm "lightingShader"
 
     currentProgram $= Just (program lightingShader)
 
@@ -85,8 +93,9 @@ main = do
         networkDescription = mdo
             idleE <- idleEvent w
             camB <- createAppCamera w (V3 0.0 0.0 3.0)
-            reactimate $ drawScene lightingShader contMesh lampShader lightMesh w <$> (camB <@ idleE)
-    runAppLoopEx w networkDescription
+            reactWithContext w $ drawScene contMesh lightMesh w <$> (camB <@ idleE)
+            -- reactimate $ drawScene pm contMesh lightMesh w <$> (camB <@ idleE)
+    runAppLoopEx2 w appContext networkDescription
 
     deleteMesh lightMesh
     deleteMesh contMesh
@@ -94,37 +103,44 @@ main = do
 
     terminate
 
-drawScene :: ShaderProgram -> Mesh -> ShaderProgram -> Mesh -> AppWindow -> Camera GLfloat -> IO ()
-drawScene lightingShader contMesh lampShader lightMesh w cam = do
-    pollEvents
-    clearColor $= Color4 0.1 0.1 0.1 1.0
-    clear [ColorBuffer, DepthBuffer]
+drawScene :: Mesh -> Mesh -> AppWindow -> Camera GLfloat -> StateT AppContext IO ()
+drawScene contMesh lightMesh w cam = do
+    appContext <- St.get
+    let pm = shaderMgr appContext
+    liftIO $ do
+        pollEvents
+        clearColor $= Color4 0.1 0.1 0.1 1.0
+        clear [ColorBuffer, DepthBuffer]
 
-    Just time <- getTime
+        Just time <- getTime
 
-    -- draw the container cube
-    currentProgram $= Just (program lightingShader)
 
-    setUniform lightingShader "viewPos" (Cam.position cam)
+        let lightingShader = getResource pm "lightingShader"
 
-    setUniform lightingShader "spotLight.position" (Cam.position cam)
-    setUniform lightingShader "spotLight.direction" (Cam.front cam)
+        -- draw the container cube
+        currentProgram $= Just (program lightingShader)
 
-    let view = viewMatrix cam
-        projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
-    setUniform lightingShader "view" view
-    setUniform lightingShader "projection" projection
+        setUniform lightingShader "viewPos" (Cam.position cam)
 
-    mapM_ (drawCube contMesh lightingShader) [0..9]
+        setUniform lightingShader "spotLight.position" (Cam.position cam)
+        setUniform lightingShader "spotLight.direction" (Cam.front cam)
 
-    -- draw the lamp
-    currentProgram $= Just (program lampShader)
-    setUniform lampShader "view" view
-    setUniform lampShader "projection" projection
+        let view = viewMatrix cam
+            projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
+        setUniform lightingShader "view" view
+        setUniform lightingShader "projection" projection
 
-    mapM_ (drawLight lightMesh lampShader) [0..3]
+        mapM_ (drawCube contMesh lightingShader) [0..9]
 
-    swap w
+        -- draw the lamp
+        let lampShader = getResource pm "lampShader"
+        currentProgram $= Just (program lampShader)
+        setUniform lampShader "view" view
+        setUniform lampShader "projection" projection
+
+        mapM_ (drawLight lightMesh lampShader) [0..3]
+
+        swap w
 
 drawLight :: Mesh -> ShaderProgram -> Int -> IO ()
 drawLight mesh shader i = do

@@ -18,5 +18,6 @@ loadModel :: FilePath -> IO ()
 loadModel path = do
     Right wfo <- fromFile path
     print $ length (objLocations wfo)
-    print $ length (objLocations wfo)
-    print $ length (objFaces wfo)
+    print $ length (objPoints wfo)
+    print $ length (objLines wfo)
+    --print $ objFaces wfo
