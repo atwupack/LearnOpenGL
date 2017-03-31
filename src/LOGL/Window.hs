@@ -20,7 +20,7 @@ import LOGL.Texture
 import Control.Applicative hiding (empty)
 import Data.Set as Set hiding (unions)
 import Graphics.GLUtil
-import Control.Monad.Trans.State as St
+import Control.Monad.Trans.Reader
 import Control.Monad.IO.Class
 
 
@@ -133,16 +133,14 @@ data AppContext = AppContext {  shaderMgr :: Manager ShaderProgram,
 initContext = AppContext {  shaderMgr = newManager,
                             textureMgr = newManager}
 
-reactWithContext :: AppWindow -> Event (StateT AppContext IO ()) -> MomentIO ()
+reactWithContext :: AppWindow -> Event (ReaderT AppContext IO ()) -> MomentIO ()
 reactWithContext win event = do
     ctxE <- ctxEvent win
     contextB <- stepper initContext ctxE
-    reactimate $ (doInContext win <$> contextB) <@> event
+    reactimate $ (doInContext <$> contextB) <@> event
 
-doInContext :: AppWindow -> AppContext -> StateT AppContext IO () -> IO ()
-doInContext win ctx action = do
-    newCtx <- execStateT action ctx
-    fireCtx win newCtx
+doInContext :: AppContext -> ReaderT AppContext IO () -> IO ()
+doInContext ctx action = runReaderT action ctx
 
 -- | functions to create a camera for an application window
 

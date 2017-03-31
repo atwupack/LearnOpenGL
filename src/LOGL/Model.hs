@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 module LOGL.Model
 (
     Model, drawModel, loadModel
@@ -5,13 +6,15 @@ module LOGL.Model
 where
 
 import LOGL.Mesh
+import LOGL.Window
 import Graphics.GLUtil.ShaderProgram
 import Codec.Wavefront
-
+import Control.Monad.Reader
+import Control.Monad.IO.Class
 
 data Model = Model { meshes :: [Mesh], directory :: FilePath} deriving (Eq, Show)
 
-drawModel :: Model -> ShaderProgram -> IO ()
+drawModel :: (MonadReader m, EnvType m ~ AppContext, MonadIO m) => Model -> String -> m ()
 drawModel model shader = mapM_ (\x -> drawMesh x shader) (meshes model)
 
 loadModel :: FilePath -> IO ()

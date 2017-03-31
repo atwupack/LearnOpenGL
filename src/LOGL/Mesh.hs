@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 module LOGL.Mesh
 (
     Mesh, createMesh, drawMesh, Vertex(..), deleteMesh, Texture(..), TextureType(..)
@@ -12,6 +13,10 @@ import Foreign.Ptr
 import Graphics.GLUtil.BufferObjects
 import Graphics.GLUtil.ShaderProgram
 import Graphics.GLUtil.VertexArrayObjects
+import Control.Monad.Reader
+import Control.Monad.IO.Class
+import LOGL.Window
+import LOGL.Resource
 
 data Vertex = Vertex { position :: V3 GLfloat, normal :: V3 GLfloat, texCoords :: V2 GLfloat }
     deriving (Eq, Show)
@@ -20,16 +25,12 @@ instance Storable Vertex where
     sizeOf _ = 2 * sizeOf (undefined :: V3 GLfloat) + sizeOf (undefined :: V2 GLfloat)
     alignment _ = alignment (undefined :: GLfloat)
     poke ptr (Vertex pos norm text) = do
-        poke ptr' pos
-        pokeElemOff ptr' 1 norm
-        pokeElemOff ptr' 3 text
-        where
-            ptr' = castPtr ptr
-    peek ptr = Vertex <$> peek ptr' <*> peekElemOff ptr' 1 <*> peekElemOff ptr' 3
-        where
-            ptr' = castPtr ptr
+        poke (castPtr ptr) pos
+        pokeElemOff (castPtr ptr) 1 norm
+        pokeElemOff (castPtr ptr) 3 text
+    peek ptr = Vertex <$> peek (castPtr ptr) <*> peekElemOff (castPtr ptr) 1 <*> peekElemOff (castPtr ptr) 3
 
-data Texture = Texture { tobj :: TextureObject, ttype :: TextureType, tname :: String }
+data Texture = Texture { tref :: String, ttype :: TextureType, tname :: String }
     deriving (Eq, Show)
 
 data TextureType = DiffuseMap | SpecularMap | NormalMap
@@ -44,26 +45,29 @@ deleteMesh mesh = do
     deleteObjectName $ ebo mesh
     deleteObjectName $ vbo mesh
 
-drawMesh :: Mesh -> ShaderProgram -> IO ()
-drawMesh mesh shader = do
-    setTextures shader (textures mesh)
-    withVAO (vao mesh) $ drawElements Triangles idxCount UnsignedInt nullPtr
+drawMesh :: (MonadReader m, EnvType m ~ AppContext, MonadIO m) => Mesh -> String -> m ()
+drawMesh mesh sref = do
+    setTextures sref (textures mesh)
+    liftIO $ withVAO (vao mesh) $ drawElements Triangles idxCount UnsignedInt nullPtr
         where
             idxCount = fromIntegral (length (indices mesh))
 
-setTextures :: ShaderProgram -> [Texture] -> IO ()
-setTextures shader [] = return ()
-setTextures shader texts = mapM_ (setTexture shader texts)  [0..texCount - 1]
+setTextures ::(MonadReader m, EnvType m ~ AppContext, MonadIO m) => String -> [Texture] -> m ()
+setTextures sref [] = return ()
+setTextures sref texts = do
+    ctx <- ask
+    let shader = getResource sref $ shaderMgr ctx
+    liftIO $ mapM_ (setTexture shader texts)  [0..texCount - 1]
     where
         texCount = fromIntegral (length texts)
 
 
 setTexture :: ShaderProgram -> [Texture] -> GLuint -> IO ()
-setTexture shader texts tu = do
+setTexture shader texts tu  = do
     let text = texts !! fromIntegral tu
         name = "mat." ++ tname text
     activeTexture $= TextureUnit tu
-    textureBinding Texture2D $= Just (tobj text)
+    -- textureBinding Texture2D $= Just (tobj text)
     setUniform shader name (TextureUnit tu)
 
 

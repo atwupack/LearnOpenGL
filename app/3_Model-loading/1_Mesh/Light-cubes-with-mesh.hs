@@ -24,6 +24,8 @@ import LOGL.Objects
 import LOGL.Mesh
 import LOGL.Shader
 import Control.Monad.Trans.State as St
+import Control.Monad.IO.Class
+import Control.Monad.Reader
 
 pointLightPositions :: [V3 GLfloat]
 pointLightPositions = [
@@ -68,7 +70,7 @@ main = do
 
     let appContext = AppContext { shaderMgr = pm, textureMgr = tm }
 
-    let lightingShader = getResource pm "lightingShader"
+    let lightingShader = getResource "lightingShader" pm
 
     currentProgram $= Just (program lightingShader)
 
@@ -84,8 +86,8 @@ main = do
     setSpotLight lightingShader
 
     contMesh <- cubeMesh [
-        Texture (getResource tm "container2") DiffuseMap "diffuse",
-        Texture (getResource tm "container2_specular") SpecularMap "specular"]
+        Texture "container2" DiffuseMap "diffuse",
+        Texture "container2_specular" SpecularMap "specular"]
     lightMesh <- cubeMesh []
 
     --polygonMode $= (Line, Line)
@@ -103,20 +105,20 @@ main = do
 
     terminate
 
-drawScene :: Mesh -> Mesh -> AppWindow -> Camera GLfloat -> StateT AppContext IO ()
+drawScene :: Mesh -> Mesh -> AppWindow -> Camera GLfloat -> ReaderT AppContext IO ()
 drawScene contMesh lightMesh w cam = do
-    appContext <- St.get
+    appContext <- ask
     let pm = shaderMgr appContext
     liftIO $ do
         pollEvents
         clearColor $= Color4 0.1 0.1 0.1 1.0
         clear [ColorBuffer, DepthBuffer]
 
-        Just time <- getTime
+    Just time <- liftIO getTime
 
+    let lightingShader = getResource "lightingShader" pm
 
-        let lightingShader = getResource pm "lightingShader"
-
+    liftIO $ do
         -- draw the container cube
         currentProgram $= Just (program lightingShader)
 
@@ -125,28 +127,34 @@ drawScene contMesh lightMesh w cam = do
         setUniform lightingShader "spotLight.position" (Cam.position cam)
         setUniform lightingShader "spotLight.direction" (Cam.front cam)
 
-        let view = viewMatrix cam
-            projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
+    let view = viewMatrix cam
+        projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
+
+    liftIO $ do
         setUniform lightingShader "view" view
         setUniform lightingShader "projection" projection
 
-        mapM_ (drawCube contMesh lightingShader) [0..9]
+    mapM_ (drawCube contMesh "lightingShader") [0..9]
 
         -- draw the lamp
-        let lampShader = getResource pm "lampShader"
+    let lampShader = getResource "lampShader" pm
+
+    liftIO $ do
         currentProgram $= Just (program lampShader)
         setUniform lampShader "view" view
         setUniform lampShader "projection" projection
 
-        mapM_ (drawLight lightMesh lampShader) [0..3]
+    mapM_ (drawLight lightMesh "lampShader") [0..3]
 
-        swap w
+    liftIO $ swap w
 
-drawLight :: Mesh -> ShaderProgram -> Int -> IO ()
-drawLight mesh shader i = do
+drawLight :: Mesh -> String -> Int -> ReaderT AppContext IO ()
+drawLight mesh sref i = do
+    ctx <- ask
+    let shader = getResource sref (shaderMgr ctx)
     let model = mkTransformationMat (0.2 *!! identity) (pointLightPositions !! i)
-    setUniform shader "model" model
-    drawMesh mesh shader
+    liftIO $ setUniform shader "model" model
+    drawMesh mesh sref
 
 setSpotLight :: ShaderProgram -> IO ()
 setSpotLight shader = do
@@ -169,10 +177,12 @@ setPointLight shader i = do
     setUniform shader ("pointLights[" ++ show i ++ "].linear") (0.09 :: GLfloat)
     setUniform shader ("pointLights[" ++ show i ++ "].quadratic") (0.032 :: GLfloat)
 
-drawCube :: Mesh -> ShaderProgram -> Int -> IO ()
-drawCube mesh shader i = do
+drawCube :: Mesh -> String -> Int -> ReaderT AppContext IO ()
+drawCube mesh sref i = do
+    ctx <- ask
+    let shader = getResource sref (shaderMgr ctx)
     let angle = pi / 180.0 * 20.0 * fromIntegral i
         rot = axisAngle (V3 (1.0 :: GLfloat) 0.3 0.5) (realToFrac angle)
         model = mkTransformation rot (cubePositions !! i)
-    setUniform shader "model" model
-    drawMesh mesh shader
+    liftIO $ setUniform shader "model" model
+    drawMesh mesh sref

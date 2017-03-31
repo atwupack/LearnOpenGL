@@ -10,7 +10,7 @@ import Linear.V2
 import Linear.V3
 
 cubeMesh :: [Texture] -> IO Mesh
-cubeMesh texts = createMesh vertices indices texts
+cubeMesh = createMesh vertices indices
     where
         indices = [0..35]
         vertices = nextVertex cubeWithNormalsAndTexture
