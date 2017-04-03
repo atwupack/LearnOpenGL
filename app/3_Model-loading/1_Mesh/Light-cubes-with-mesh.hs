@@ -23,7 +23,7 @@ import LOGL.FRP
 import LOGL.Objects
 import LOGL.Mesh
 import LOGL.Shader
-import Control.Monad.Trans.State as St
+import Control.Monad.State as St
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 

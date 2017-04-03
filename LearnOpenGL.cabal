@@ -562,6 +562,8 @@ executable model-diffuse
                        , linear
                        , reactive-banana
                        , containers
+                       , transformers
+                       , monads-tf
     default-language:    Haskell2010
 
 

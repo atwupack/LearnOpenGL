@@ -3,11 +3,12 @@ module Main where
 
 import LOGL.Window
 import LOGL.Texture
+import LOGL.Resource
 import LOGL.Camera as Cam
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL hiding (normalize, position, Texture)
-import Graphics.GLUtil
+import Graphics.GLUtil hiding (loadTexture)
 import System.FilePath
 import Graphics.Rendering.OpenGL.GL.Shaders.ProgramObjects
 import Linear.Matrix
@@ -21,7 +22,10 @@ import Reactive.Banana.Combinators hiding (empty)
 import LOGL.FRP
 import LOGL.Objects
 import LOGL.Mesh
-import LOGL.Model
+import LOGL.Shader
+import Control.Monad.State as St
+import Control.Monad.IO.Class
+import Control.Monad.Reader
 
 pointLightPositions :: [V3 GLfloat]
 pointLightPositions = [
@@ -45,7 +49,6 @@ cubePositions = [
 
 main :: IO ()
 main = do
-    loadModel ("data" </> "3_Model-loading" </> "nanosuit" </> "nanosuit.obj")
     GLFW.init
     w <- createAppWindow 800 600 "LearnOpenGL"
 
@@ -53,14 +56,21 @@ main = do
 
     depthFunc $= Just Less
 
-    lampShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.vs")
-        ("data" </> "2_Lighting" </> "1_Colors" </> "lamp.frag")
+    pm <- updateManager newManager $ do
+        loadResource ("lampShader",
+            "data" </> "2_Lighting" </> "1_Colors" </> "lamp.vs",
+            "data" </> "2_Lighting" </> "1_Colors" </> "lamp.frag")
+        loadResource ("lightingShader",
+            "data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.vs",
+            "data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.frag")
 
-    lightingShader <- simpleShaderProgram ("data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.vs")
-        ("data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.frag")
+    tm <- updateManager newManager $ do
+        loadResource ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
+        loadResource ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2_specular.png")
 
-    diffuseMap <- createTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
-    specularMap <- createTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2_specular.png")
+    let appContext = AppContext { shaderMgr = pm, textureMgr = tm }
+
+    let lightingShader = getResource "lightingShader" pm
 
     currentProgram $= Just (program lightingShader)
 
@@ -76,8 +86,8 @@ main = do
     setSpotLight lightingShader
 
     contMesh <- cubeMesh [
-        Texture diffuseMap DiffuseMap "diffuse",
-        Texture specularMap SpecularMap "specular"]
+        Texture "container2" DiffuseMap "diffuse",
+        Texture "container2_specular" SpecularMap "specular"]
     lightMesh <- cubeMesh []
 
     --polygonMode $= (Line, Line)
@@ -85,51 +95,66 @@ main = do
         networkDescription = mdo
             idleE <- idleEvent w
             camB <- createAppCamera w (V3 0.0 0.0 3.0)
-            reactimate $ drawScene lightingShader contMesh lampShader lightMesh w <$> (camB <@ idleE)
-    runAppLoopEx w networkDescription
+            reactWithContext w $ drawScene contMesh lightMesh w <$> (camB <@ idleE)
+            -- reactimate $ drawScene pm contMesh lightMesh w <$> (camB <@ idleE)
+    runAppLoopEx2 w appContext networkDescription
 
     deleteMesh lightMesh
     deleteMesh contMesh
+    updateManager tm deleteAll
 
     terminate
 
-drawScene :: ShaderProgram -> Mesh -> ShaderProgram -> Mesh -> AppWindow -> Camera GLfloat -> IO ()
-drawScene lightingShader contMesh lampShader lightMesh w cam = do
-    pollEvents
-    clearColor $= Color4 0.1 0.1 0.1 1.0
-    clear [ColorBuffer, DepthBuffer]
+drawScene :: Mesh -> Mesh -> AppWindow -> Camera GLfloat -> ReaderT AppContext IO ()
+drawScene contMesh lightMesh w cam = do
+    appContext <- ask
+    let pm = shaderMgr appContext
+    liftIO $ do
+        pollEvents
+        clearColor $= Color4 0.1 0.1 0.1 1.0
+        clear [ColorBuffer, DepthBuffer]
 
-    Just time <- getTime
+    Just time <- liftIO getTime
 
-    -- draw the container cube
-    currentProgram $= Just (program lightingShader)
+    let lightingShader = getResource "lightingShader" pm
 
-    setUniform lightingShader "viewPos" (Cam.position cam)
+    liftIO $ do
+        -- draw the container cube
+        currentProgram $= Just (program lightingShader)
 
-    setUniform lightingShader "spotLight.position" (Cam.position cam)
-    setUniform lightingShader "spotLight.direction" (Cam.front cam)
+        setUniform lightingShader "viewPos" (Cam.position cam)
+
+        setUniform lightingShader "spotLight.position" (Cam.position cam)
+        setUniform lightingShader "spotLight.direction" (Cam.front cam)
 
     let view = viewMatrix cam
         projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
-    setUniform lightingShader "view" view
-    setUniform lightingShader "projection" projection
 
-    mapM_ (drawCube contMesh lightingShader) [0..9]
+    liftIO $ do
+        setUniform lightingShader "view" view
+        setUniform lightingShader "projection" projection
 
-    -- draw the lamp
-    currentProgram $= Just (program lampShader)
-    setUniform lampShader "view" view
-    setUniform lampShader "projection" projection
+    mapM_ (drawCube contMesh "lightingShader") [0..9]
 
-    mapM_ (drawLight lightMesh lampShader) [0..3]
+        -- draw the lamp
+    let lampShader = getResource "lampShader" pm
 
-    swap w
+    liftIO $ do
+        currentProgram $= Just (program lampShader)
+        setUniform lampShader "view" view
+        setUniform lampShader "projection" projection
 
-drawLight :: Mesh -> ShaderProgram -> Int -> IO ()
-drawLight mesh shader i = do
+    mapM_ (drawLight lightMesh "lampShader") [0..3]
+
+    liftIO $ swap w
+
+drawLight :: Mesh -> String -> Int -> ReaderT AppContext IO ()
+drawLight mesh sref i = do
+    ctx <- ask
+    let shader = getResource sref (shaderMgr ctx)
     let model = mkTransformationMat (0.2 *!! identity) (pointLightPositions !! i)
-    setUniform shader "model" model
-    drawMesh mesh shader
+    liftIO $ setUniform shader "model" model
+    drawMesh mesh sref
 
 setSpotLight :: ShaderProgram -> IO ()
 setSpotLight shader = do
@@ -152,10 +177,12 @@ setPointLight shader i = do
     setUniform shader ("pointLights[" ++ show i ++ "].linear") (0.09 :: GLfloat)
     setUniform shader ("pointLights[" ++ show i ++ "].quadratic") (0.032 :: GLfloat)
 
-drawCube :: Mesh -> ShaderProgram -> Int -> IO ()
-drawCube mesh shader i = do
+drawCube :: Mesh -> String -> Int -> ReaderT AppContext IO ()
+drawCube mesh sref i = do
+    ctx <- ask
+    let shader = getResource sref (shaderMgr ctx)
     let angle = pi / 180.0 * 20.0 * fromIntegral i
         rot = axisAngle (V3 (1.0 :: GLfloat) 0.3 0.5) (realToFrac angle)
         model = mkTransformation rot (cubePositions !! i)
-    setUniform shader "model" model
-    drawMesh mesh shader
+    liftIO $ setUniform shader "model" model
+    drawMesh mesh sref

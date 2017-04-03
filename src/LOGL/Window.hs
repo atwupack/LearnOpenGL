@@ -20,7 +20,7 @@ import LOGL.Texture
 import Control.Applicative hiding (empty)
 import Data.Set as Set hiding (unions)
 import Graphics.GLUtil
-import Control.Monad.Trans.Reader
+import Control.Monad.Reader
 import Control.Monad.IO.Class
 
 
@@ -138,9 +138,8 @@ reactWithContext win event = do
     ctxE <- ctxEvent win
     contextB <- stepper initContext ctxE
     reactimate $ (doInContext <$> contextB) <@> event
-
-doInContext :: AppContext -> ReaderT AppContext IO () -> IO ()
-doInContext ctx action = runReaderT action ctx
+    where
+        doInContext ctx action = runReaderT action ctx
 
 -- | functions to create a camera for an application window
 

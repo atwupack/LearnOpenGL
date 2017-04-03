@@ -54,21 +54,21 @@ drawMesh mesh sref = do
 
 setTextures ::(MonadReader m, EnvType m ~ AppContext, MonadIO m) => String -> [Texture] -> m ()
 setTextures sref [] = return ()
-setTextures sref texts = do
-    ctx <- ask
-    let shader = getResource sref $ shaderMgr ctx
-    liftIO $ mapM_ (setTexture shader texts)  [0..texCount - 1]
+setTextures sref texts = mapM_ (setTexture sref texts)  [0..texCount - 1]
     where
         texCount = fromIntegral (length texts)
 
 
-setTexture :: ShaderProgram -> [Texture] -> GLuint -> IO ()
-setTexture shader texts tu  = do
-    let text = texts !! fromIntegral tu
+setTexture :: (MonadReader m, EnvType m ~ AppContext, MonadIO m) => String -> [Texture] -> GLuint -> m ()
+setTexture sref texts tu  = do
+    ctx <- ask
+    let shader = getResource sref $ shaderMgr ctx
+        tobj = getResource (tref text) $ textureMgr ctx
+        text = texts !! fromIntegral tu
         name = "mat." ++ tname text
     activeTexture $= TextureUnit tu
-    -- textureBinding Texture2D $= Just (tobj text)
-    setUniform shader name (TextureUnit tu)
+    textureBinding Texture2D $= Just tobj
+    liftIO $ setUniform shader name (TextureUnit tu)
 
 
 createMesh :: [Vertex] -> [GLuint] -> [Texture] -> IO Mesh
