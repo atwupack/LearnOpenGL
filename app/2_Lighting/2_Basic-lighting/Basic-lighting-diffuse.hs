@@ -1,7 +1,7 @@
 {-# LANGUAGE RecursiveDo #-}
 module Main where
 
-import LOGL.Window
+import LOGL.Application.Window
 import LOGL.Camera
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW

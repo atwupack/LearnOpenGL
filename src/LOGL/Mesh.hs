@@ -15,7 +15,6 @@ import Graphics.GLUtil.ShaderProgram
 import Graphics.GLUtil.VertexArrayObjects
 import Control.Monad.Reader
 import Control.Monad.IO.Class
-import LOGL.Window
 import LOGL.Application.Context
 
 data Vertex = Vertex { position :: V3 GLfloat, normal :: V3 GLfloat, texCoords :: V2 GLfloat }

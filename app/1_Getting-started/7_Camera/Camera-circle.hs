@@ -1,6 +1,6 @@
 module Main where
 
-import LOGL.Window
+import LOGL.Application.Window
 import LOGL.Objects
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW

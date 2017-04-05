@@ -19,7 +19,7 @@ flag buildAll
 
 library
     hs-source-dirs:      src
-    exposed-modules:     LOGL.Window
+    exposed-modules:     LOGL.Application.Window
                         , LOGL.FRP
                         , LOGL.Camera
                         , LOGL.Objects

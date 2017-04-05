@@ -7,7 +7,6 @@ where
 
 import LOGL.Application.Context
 import LOGL.Mesh
-import LOGL.Window
 import Graphics.GLUtil.ShaderProgram
 import Codec.Wavefront
 import Control.Monad.Reader

@@ -1,4 +1,4 @@
-module LOGL.Window
+module LOGL.Application.Window
 (
     createAppWindow, runAppLoop, AppWindow, swap, runAppLoopEx, runAppLoopEx2, idleEvent, keyEvent, cursorPosEvent,
     window, scrollEvent, keyBehavior, Keys, keyPressed, createAppCamera,
