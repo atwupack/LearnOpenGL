@@ -2,7 +2,6 @@
 module Main where
 
 import LOGL.Window
-import LOGL.Texture
 import LOGL.Camera
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW

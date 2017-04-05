@@ -1,12 +1,12 @@
 {-# LANGUAGE TypeFamilies #-}
-module LOGL.Shader
+module LOGL.Internal.Shader
 (
 
 )
 where
 
 import Graphics.GLUtil
-import LOGL.Resource
+import LOGL.Internal.Resource
 
 instance Resource ShaderProgram where
     type LoadParam ShaderProgram = (String, FilePath, FilePath)

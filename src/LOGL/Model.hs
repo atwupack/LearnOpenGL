@@ -5,6 +5,7 @@ module LOGL.Model
 )
 where
 
+import LOGL.Application.Context
 import LOGL.Mesh
 import LOGL.Window
 import Graphics.GLUtil.ShaderProgram

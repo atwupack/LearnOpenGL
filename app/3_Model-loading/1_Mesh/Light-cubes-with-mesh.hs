@@ -2,15 +2,13 @@
 module Main where
 
 import LOGL.Window
-import LOGL.Texture
-import LOGL.Resource
+import LOGL.Application.Context
 import LOGL.Camera as Cam
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL hiding (normalize, position, Texture)
-import Graphics.GLUtil hiding (loadTexture)
+import Graphics.GLUtil hiding (loadTexture, loadShader)
 import System.FilePath
-import Graphics.Rendering.OpenGL.GL.Shaders.ProgramObjects
 import Linear.Matrix
 import Linear.V3
 import Linear.Vector
@@ -22,9 +20,6 @@ import Reactive.Banana.Combinators hiding (empty)
 import LOGL.FRP
 import LOGL.Objects
 import LOGL.Mesh
-import LOGL.Shader
-import Control.Monad.State as St
-import Control.Monad.IO.Class
 import Control.Monad.Reader
 
 pointLightPositions :: [V3 GLfloat]
@@ -56,34 +51,15 @@ main = do
 
     depthFunc $= Just Less
 
-    pm <- updateManager newManager $ do
-        loadResource ("lampShader",
+    appContext <- newContext $ do
+        loadShader ("lampShader",
             "data" </> "2_Lighting" </> "1_Colors" </> "lamp.vs",
             "data" </> "2_Lighting" </> "1_Colors" </> "lamp.frag")
-        loadResource ("lightingShader",
+        loadShader ("lightingShader",
             "data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.vs",
             "data" </> "2_Lighting" </> "6_Multiple-lights" </> "multiple-spot.frag")
-
-    tm <- updateManager newManager $ do
-        loadResource ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
-        loadResource ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2_specular.png")
-
-    let appContext = AppContext { shaderMgr = pm, textureMgr = tm }
-
-    let lightingShader = getResource "lightingShader" pm
-
-    currentProgram $= Just (program lightingShader)
-
-    setUniform lightingShader "mat.shininess" (32.0 :: GLfloat)
-
-    setUniform lightingShader "dirLight.direction" (V3 (-0.2 :: GLfloat) (-1.0) (-0.3))
-    setUniform lightingShader "dirLight.ambient" (V3 (0.05 :: GLfloat) 0.05 0.05)
-    setUniform lightingShader "dirLight.diffuse" (V3 (0.4 :: GLfloat) 0.4 0.4)
-    setUniform lightingShader "dirLight.specular" (V3 (0.5 :: GLfloat) 0.5 0.5)
-
-    mapM_ (setPointLight lightingShader) [0..3]
-
-    setSpotLight lightingShader
+        loadTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2.png")
+        loadTexture ("data" </> "2_Lighting" </> "4_Lighting-maps" </> "container2_specular.png")
 
     contMesh <- cubeMesh [
         Texture "container2" DiffuseMap "diffuse",
@@ -101,14 +77,12 @@ main = do
 
     deleteMesh lightMesh
     deleteMesh contMesh
-    updateManager tm deleteAll
+    --updateManager tm deleteAll
 
     terminate
 
 drawScene :: Mesh -> Mesh -> AppWindow -> Camera GLfloat -> ReaderT AppContext IO ()
 drawScene contMesh lightMesh w cam = do
-    appContext <- ask
-    let pm = shaderMgr appContext
     liftIO $ do
         pollEvents
         clearColor $= Color4 0.1 0.1 0.1 1.0
@@ -116,7 +90,7 @@ drawScene contMesh lightMesh w cam = do
 
     Just time <- liftIO getTime
 
-    let lightingShader = getResource "lightingShader" pm
+    lightingShader <- getShader "lightingShader"
 
     liftIO $ do
         -- draw the container cube
@@ -126,6 +100,16 @@ drawScene contMesh lightMesh w cam = do
 
         setUniform lightingShader "spotLight.position" (Cam.position cam)
         setUniform lightingShader "spotLight.direction" (Cam.front cam)
+        setUniform lightingShader "mat.shininess" (32.0 :: GLfloat)
+
+        setUniform lightingShader "dirLight.direction" (V3 (-0.2 :: GLfloat) (-1.0) (-0.3))
+        setUniform lightingShader "dirLight.ambient" (V3 (0.05 :: GLfloat) 0.05 0.05)
+        setUniform lightingShader "dirLight.diffuse" (V3 (0.4 :: GLfloat) 0.4 0.4)
+        setUniform lightingShader "dirLight.specular" (V3 (0.5 :: GLfloat) 0.5 0.5)
+
+        mapM_ (setPointLight lightingShader) [0..3]
+
+        setSpotLight lightingShader
 
     let view = viewMatrix cam
         projection = perspective (radians (zoom cam)) (800.0 / 600.0) 0.1 (100.0 :: GLfloat)
@@ -137,7 +121,7 @@ drawScene contMesh lightMesh w cam = do
     mapM_ (drawCube contMesh "lightingShader") [0..9]
 
         -- draw the lamp
-    let lampShader = getResource "lampShader" pm
+    lampShader <- getShader "lampShader"
 
     liftIO $ do
         currentProgram $= Just (program lampShader)
@@ -150,8 +134,7 @@ drawScene contMesh lightMesh w cam = do
 
 drawLight :: Mesh -> String -> Int -> ReaderT AppContext IO ()
 drawLight mesh sref i = do
-    ctx <- ask
-    let shader = getResource sref (shaderMgr ctx)
+    shader <- getShader sref
     let model = mkTransformationMat (0.2 *!! identity) (pointLightPositions !! i)
     liftIO $ setUniform shader "model" model
     drawMesh mesh sref
@@ -179,8 +162,7 @@ setPointLight shader i = do
 
 drawCube :: Mesh -> String -> Int -> ReaderT AppContext IO ()
 drawCube mesh sref i = do
-    ctx <- ask
-    let shader = getResource sref (shaderMgr ctx)
+    shader <- getShader sref
     let angle = pi / 180.0 * 20.0 * fromIntegral i
         rot = axisAngle (V3 (1.0 :: GLfloat) 0.3 0.5) (realToFrac angle)
         model = mkTransformation rot (cubePositions !! i)

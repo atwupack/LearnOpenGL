@@ -16,7 +16,7 @@ import Graphics.GLUtil.VertexArrayObjects
 import Control.Monad.Reader
 import Control.Monad.IO.Class
 import LOGL.Window
-import LOGL.Resource
+import LOGL.Application.Context
 
 data Vertex = Vertex { position :: V3 GLfloat, normal :: V3 GLfloat, texCoords :: V2 GLfloat }
     deriving (Eq, Show)
@@ -61,11 +61,10 @@ setTextures sref texts = mapM_ (setTexture sref texts)  [0..texCount - 1]
 
 setTexture :: (MonadReader m, EnvType m ~ AppContext, MonadIO m) => String -> [Texture] -> GLuint -> m ()
 setTexture sref texts tu  = do
-    ctx <- ask
-    let shader = getResource sref $ shaderMgr ctx
-        tobj = getResource (tref text) $ textureMgr ctx
-        text = texts !! fromIntegral tu
+    shader <- getShader sref
+    let text = texts !! fromIntegral tu
         name = "mat." ++ tname text
+    tobj <- getTexture (tref text)
     activeTexture $= TextureUnit tu
     textureBinding Texture2D $= Just tobj
     liftIO $ setUniform shader name (TextureUnit tu)

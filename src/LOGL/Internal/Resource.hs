@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeFamilies #-}
-module LOGL.Resource
+module LOGL.Internal.Resource
 (
     Resource(..), Manager, newManager, loadResource,
     deleteResource, updateManager, getResource, deleteAll

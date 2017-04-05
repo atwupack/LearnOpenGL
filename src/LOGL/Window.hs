@@ -2,9 +2,11 @@ module LOGL.Window
 (
     createAppWindow, runAppLoop, AppWindow, swap, runAppLoopEx, runAppLoopEx2, idleEvent, keyEvent, cursorPosEvent,
     window, scrollEvent, keyBehavior, Keys, keyPressed, createAppCamera,
-    AppContext(..), reactWithContext
+    reactWithContext, createTexture
 )
 where
+
+import LOGL.Application.Context
 
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
@@ -14,9 +16,6 @@ import Reactive.Banana hiding (empty)
 import LOGL.FRP
 import Linear.V3
 import LOGL.Camera
-import LOGL.Resource
-import LOGL.Shader
-import LOGL.Texture
 import Control.Applicative hiding (empty)
 import Data.Set as Set hiding (unions)
 import Graphics.GLUtil
@@ -91,7 +90,7 @@ runAppLoopEx2 win context net = do
     pause network
 
 runAppLoopEx :: AppWindow -> MomentIO () -> IO ()
-runAppLoopEx win = runAppLoopEx2 win initContext
+runAppLoopEx win = runAppLoopEx2 win emptyContext
 
 runAppLoop :: AppWindow -> IO () -> IO ()
 runAppLoop win loop = do
@@ -127,16 +126,10 @@ keyPressed :: Key -> Keys -> Bool
 keyPressed = member
 
 -- | functions for the application context
-data AppContext = AppContext {  shaderMgr :: Manager ShaderProgram,
-                                textureMgr :: Manager TextureObject}
-
-initContext = AppContext {  shaderMgr = newManager,
-                            textureMgr = newManager}
-
 reactWithContext :: AppWindow -> Event (ReaderT AppContext IO ()) -> MomentIO ()
 reactWithContext win event = do
     ctxE <- ctxEvent win
-    contextB <- stepper initContext ctxE
+    contextB <- stepper emptyContext ctxE
     reactimate $ (doInContext <$> contextB) <@> event
     where
         doInContext ctx action = runReaderT action ctx
@@ -195,3 +188,16 @@ handlePosEvent (w, xpos, ypos) state = state { lastX = realToFrac xpos, lastY = 
         ly = if firstMouse state then realToFrac ypos else lastY state
         xoffset =  realToFrac xpos - lx
         yoffset = ly - realToFrac ypos
+
+createTexture :: FilePath -> IO TextureObject
+createTexture p = do
+    result <- readTexture p
+    case result of
+        Left s -> error s
+        Right t -> do
+            textureWrapMode Texture2D S $= (Repeated, Repeat)
+            textureWrapMode Texture2D T $= (Repeated, Repeat)
+            textureFilter Texture2D $= ((Linear', Nothing), Linear')
+            generateMipmap Texture2D $= Enabled
+            textureBinding Texture2D $= Nothing
+            return t

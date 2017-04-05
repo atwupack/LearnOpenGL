@@ -1,7 +1,6 @@
 module Main where
 
 import LOGL.Window
-import LOGL.Texture
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL

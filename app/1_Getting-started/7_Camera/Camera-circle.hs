@@ -1,7 +1,6 @@
 module Main where
 
 import LOGL.Window
-import LOGL.Texture
 import LOGL.Objects
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
