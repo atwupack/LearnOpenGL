@@ -5,7 +5,7 @@ import Data.Array.Storable
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
-import LOGL.Application.Window
+import LOGL.Application
 
 vertices = [-0.5, -0.5, 0.0,
      0.5, -0.5, 0.0,

@@ -19,13 +19,14 @@ flag buildAll
 
 library
     hs-source-dirs:      src
-    exposed-modules:     LOGL.Application.Window
+    exposed-modules:    LOGL.Application
+                        , LOGL.Application.Context
+                        , LOGL.Application.Window
                         , LOGL.FRP
                         , LOGL.Camera
                         , LOGL.Objects
                         , LOGL.Mesh
                         , LOGL.Model
-                        , LOGL.Application.Context
     other-modules:      LOGL.Internal.Resource
                         , LOGL.Internal.Shader
                         , LOGL.Internal.Texture

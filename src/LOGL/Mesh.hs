@@ -17,6 +17,7 @@ import Control.Monad.Reader
 import Control.Monad.IO.Class
 import LOGL.Application.Context
 
+
 data Vertex = Vertex { position :: V3 GLfloat, normal :: V3 GLfloat, texCoords :: V2 GLfloat }
     deriving (Eq, Show)
 

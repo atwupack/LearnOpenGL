@@ -1,8 +1,8 @@
 {-# LANGUAGE RecursiveDo, ScopedTypeVariables #-}
 module Main where
 
-import LOGL.Application.Window
-import LOGL.Application.Context
+import LOGL.Application
+
 import LOGL.Camera as Cam
 import Foreign.Ptr
 import Graphics.UI.GLFW as GLFW

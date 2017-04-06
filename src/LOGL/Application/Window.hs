@@ -1,16 +1,14 @@
 module LOGL.Application.Window
 (
-    createAppWindow, runAppLoop, AppWindow, swap, runAppLoopEx, runAppLoopEx2, idleEvent, keyEvent, cursorPosEvent,
-    window, scrollEvent, keyBehavior, Keys, keyPressed, createAppCamera,
-    reactWithContext, createTexture
+    createAppWindow, AppWindow(..), swap,
+    keyBehavior, Keys, keyPressed, createAppCamera,
+    createTexture, initWindowResize
 )
 where
 
 import LOGL.Application.Context
-
 import Graphics.UI.GLFW as GLFW
 import Graphics.Rendering.OpenGL.GL as GL
-import Control.Monad.Loops
 import Reactive.Banana.Frameworks
 import Reactive.Banana hiding (empty)
 import LOGL.FRP
@@ -66,39 +64,13 @@ createAppWindow width height t = do
                                 ctxEvent = fromAddHandler ctxAddHandler,
                                 fireCtx = fCtx}
 
-runAppLoopEx2 :: AppWindow -> AppContext -> MomentIO () -> IO ()
-runAppLoopEx2 win context net = do
-    let networkDesc :: MomentIO ()
-        networkDesc = do
-            -- close windw on ESC
-            keyE <- keyEvent win
-            let escE = filterKeyPressE keyE Key'Escape
-            reactimate $ setWindowShouldClose (window win) True <$ escE
-            -- react on window resize
-            winSizeE <- winSizeEvent win
-            reactimate $ handleWinResize <$> winSizeE
-            net
-    network <- compile networkDesc
-    actuate network
-    fireCtx win context
-    whileM_ (not <$> windowShouldClose (window win)) $ do
-        Just startTime <- getTime
-        fireIdle win ()
-        Just endTime <- getTime
-        let fps = 1.0 / (endTime - startTime)
-        setWindowTitle (window win) (title win ++ "(" ++ show fps ++ " fps)")
-    pause network
+-- | window resizing functions
 
-runAppLoopEx :: AppWindow -> MomentIO () -> IO ()
-runAppLoopEx win = runAppLoopEx2 win emptyContext
-
-runAppLoop :: AppWindow -> IO () -> IO ()
-runAppLoop win loop = do
-    let networkDesc :: MomentIO ()
-        networkDesc = do
-            idleE <- idleEvent win
-            reactimate $ loop <$ idleE
-    runAppLoopEx win networkDesc
+initWindowResize :: AppWindow -> MomentIO ()
+initWindowResize win = do
+    -- react on window resize
+    winSizeE <- winSizeEvent win
+    reactimate $ handleWinResize <$> winSizeE
 
 handleWinResize :: WindowSizeEvent -> IO ()
 handleWinResize (win, width, height) = do
@@ -125,14 +97,6 @@ handleKeyEvent  (w, k, i, _, m) keys = keys
 keyPressed :: Key -> Keys -> Bool
 keyPressed = member
 
--- | functions for the application context
-reactWithContext :: AppWindow -> Event (ReaderT AppContext IO ()) -> MomentIO ()
-reactWithContext win event = do
-    ctxE <- ctxEvent win
-    contextB <- stepper emptyContext ctxE
-    reactimate $ (doInContext <$> contextB) <@> event
-    where
-        doInContext ctx action = runReaderT action ctx
 
 -- | functions to create a camera for an application window
 
